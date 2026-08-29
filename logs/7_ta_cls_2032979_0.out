@@ -1,0 +1,94 @@
+============================================================
+TopAneu classifier training
+Job ID:       2033004
+Array ID:     0
+Node:         ng20101
+Start:        Sat Aug 29 06:17:56 EDT 2026
+============================================================
+==============================================
+TopAneu RSNA Pipeline Environment
+==============================================
+TOPANEU_ROOT        = /home/abdul7/projects/def-punithak/abdul7/TopAneu
+EXP_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+CODE_ROOT           = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/code
+TOPANEU_DATA        = /home/abdul7/projects/def-punithak/abdul7/TopAneu/data
+
+SCRATCH_ROOT        = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+nnUNet_raw          = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw
+nnUNet_preprocessed = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed
+nnUNet_results      = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_results
+LOG_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs
+
+Python:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/python
+
+nnUNet:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/nnUNetv2_train
+
+Scratch:
+Filesystem                                   Size  Used Avail Use% Mounted on
+10.82.48.7@o2ib1:10.82.48.8@o2ib1:/lustre07   19T  405G   19T   3% /scratch
+==============================================
+CODE_ROOT:    /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/code
+CPUs:         8
+Memory:       131072 MB
+Fold:         0
+============================================================
+GPU information
+============================================================
+Sat Aug 29 06:17:57 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.159.04             Driver Version: 580.159.04     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-SXM4-40GB          Off |   00000000:41:00.0 Off |                    0 |
+| N/A   29C    P0             54W /  400W |       0MiB /  40960MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+============================================================
+Starting classifier training
+============================================================
+fold 0: 334 train / 83 val | 52 locations, 36 vessels, 3 types
+[backbone] loaded /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_results/Dataset302_TopAneuVessel/RSNA2025Trainer_moreDAv6_1_SkeletonRecallTverskyBeta07__nnUNetResEncUNetMPlans__3d_fullres/fold_all/checkpoint_final.pth
+[backbone] missing=10 unexpected=0
+[f0] ep 1/25 loc=0.1686 ap=0.6321 sph_bce=2.9407 sph_ft=0.7284 typ=0.6075 | AUC_loc=0.6055(32) AUC_ap=0.7452 score=0.6753 | 203s
+[f0] ep 2/25 loc=0.0932 ap=0.5837 sph_bce=1.9820 sph_ft=0.6894 typ=0.5058 | AUC_loc=0.6980(32) AUC_ap=0.8159 score=0.7570 | 203s
+[f0] ep 3/25 loc=0.0890 ap=0.5761 sph_bce=0.6578 sph_ft=0.6084 typ=0.4571 | AUC_loc=0.7740(32) AUC_ap=0.8886 score=0.8313 | 203s
+[f0] ep 4/25 loc=0.0849 ap=0.5600 sph_bce=0.2743 sph_ft=0.6139 typ=0.3952 | AUC_loc=0.7861(32) AUC_ap=0.9173 score=0.8517 | 202s
+[f0] ep 5/25 loc=0.0819 ap=0.5444 sph_bce=0.1884 sph_ft=0.6339 typ=0.3703 | AUC_loc=0.8015(32) AUC_ap=0.8864 score=0.8439 | 202s
+[f0] ep 6/25 loc=0.0769 ap=0.5011 sph_bce=0.1709 sph_ft=0.6369 typ=0.3599 | AUC_loc=0.8089(32) AUC_ap=0.8499 score=0.8294 | 203s
+[f0] ep 7/25 loc=0.0727 ap=0.4339 sph_bce=0.1459 sph_ft=0.6365 typ=0.3486 | AUC_loc=0.8143(32) AUC_ap=0.8566 score=0.8354 | 202s
+[f0] ep 8/25 loc=0.0674 ap=0.3649 sph_bce=0.1138 sph_ft=0.6296 typ=0.3412 | AUC_loc=0.8078(32) AUC_ap=0.8949 score=0.8514 | 201s
+[f0] ep 9/25 loc=0.0666 ap=0.3964 sph_bce=0.1128 sph_ft=0.6288 typ=0.3313 | AUC_loc=0.8078(32) AUC_ap=0.9136 score=0.8607 | 201s
+[f0] ep 10/25 loc=0.0619 ap=0.2974 sph_bce=0.0796 sph_ft=0.6160 typ=0.3105 | AUC_loc=0.8009(32) AUC_ap=0.9225 score=0.8617 | 201s
+[f0] ep 11/25 loc=0.0624 ap=0.3283 sph_bce=0.0882 sph_ft=0.6169 typ=0.3167 | AUC_loc=0.8086(32) AUC_ap=0.9285 score=0.8685 | 203s
+[f0] ep 12/25 loc=0.0613 ap=0.2815 sph_bce=0.0639 sph_ft=0.6170 typ=0.3013 | AUC_loc=0.8335(32) AUC_ap=0.9396 score=0.8866 | 202s
+[f0] ep 13/25 loc=0.0574 ap=0.2628 sph_bce=0.0615 sph_ft=0.6021 typ=0.2907 | AUC_loc=0.8282(32) AUC_ap=0.9456 score=0.8869 | 202s
+[f0] ep 14/25 loc=0.0559 ap=0.2021 sph_bce=0.0621 sph_ft=0.5882 typ=0.2813 | AUC_loc=0.8287(32) AUC_ap=0.9486 score=0.8887 | 202s
+[f0] ep 15/25 loc=0.0548 ap=0.1760 sph_bce=0.0491 sph_ft=0.5849 typ=0.2747 | AUC_loc=0.8322(32) AUC_ap=0.9516 score=0.8919 | 203s
+[f0] ep 16/25 loc=0.0516 ap=0.1682 sph_bce=0.0503 sph_ft=0.5800 typ=0.2660 | AUC_loc=0.8439(32) AUC_ap=0.9508 score=0.8974 | 201s
+[f0] ep 17/25 loc=0.0532 ap=0.1649 sph_bce=0.0546 sph_ft=0.5853 typ=0.2590 | AUC_loc=0.8470(32) AUC_ap=0.9463 score=0.8967 | 201s
+[f0] ep 18/25 loc=0.0505 ap=0.1305 sph_bce=0.0535 sph_ft=0.5713 typ=0.2495 | AUC_loc=0.8423(32) AUC_ap=0.9493 score=0.8958 | 201s
+[f0] ep 19/25 loc=0.0495 ap=0.1079 sph_bce=0.0441 sph_ft=0.5663 typ=0.2413 | AUC_loc=0.8449(32) AUC_ap=0.9568 score=0.9008 | 202s
+[f0] ep 20/25 loc=0.0480 ap=0.1036 sph_bce=0.0550 sph_ft=0.5607 typ=0.2357 | AUC_loc=0.8479(32) AUC_ap=0.9583 score=0.9031 | 204s
+[f0] ep 21/25 loc=0.0474 ap=0.1131 sph_bce=0.0460 sph_ft=0.5628 typ=0.2368 | AUC_loc=0.8568(32) AUC_ap=0.9590 score=0.9079 | 203s
+[f0] ep 22/25 loc=0.0473 ap=0.1084 sph_bce=0.0438 sph_ft=0.5607 typ=0.2360 | AUC_loc=0.8575(32) AUC_ap=0.9605 score=0.9090 | 202s
+[f0] ep 23/25 loc=0.0467 ap=0.1129 sph_bce=0.0371 sph_ft=0.5584 typ=0.2365 | AUC_loc=0.8589(32) AUC_ap=0.9627 score=0.9108 | 202s
+[f0] ep 24/25 loc=0.0453 ap=0.0910 sph_bce=0.0410 sph_ft=0.5486 typ=0.2284 | AUC_loc=0.8618(32) AUC_ap=0.9613 score=0.9115 | 203s
+[f0] ep 25/25 loc=0.0481 ap=0.1211 sph_bce=0.0442 sph_ft=0.5534 typ=0.2335 | AUC_loc=0.8644(32) AUC_ap=0.9613 score=0.9128 | 202s
+best fold 0: 0.9128
+============================================================
+TopAneu classifier fold 0 COMPLETE
+End: Sat Aug 29 07:47:23 EDT 2026
+============================================================

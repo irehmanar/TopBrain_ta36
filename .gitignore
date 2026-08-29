@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large medical imaging/data files
+*.nii
+*.nii.gz
+*.npz
+*.npy
+*.pkl
+
+# Model/checkpoint files
+*.pth
+*.pt
+*.ckpt
+*.onnx
+
+# Generated outputs
+results/
+predictions/
+outputs/
+
+# OS
+.DS_Store
