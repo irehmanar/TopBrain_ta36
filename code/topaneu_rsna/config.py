@@ -68,15 +68,22 @@ SW_OVERLAP_COARSE  = 0.2
 SW_OVERLAP_FINE    = 0.3
 
 # --------------------------------------------------------------------------- nnU-Net
-DS_COARSE = 301   # Dataset301_TopAneuVesselGroup  (Model 1)
-DS_VESSEL = 302   # Dataset302_TopAneuVessel       (Models 2 and 3)
-DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel"}
+DS_COARSE   = 301   # Dataset301_TopAneuVesselGroup  (Model 1)
+DS_VESSEL   = 302   # Dataset302_TopAneuVessel       (Models 2 and 3)
+DS_LOCATION = 303   # Dataset303_TopAneuLocation     (Task 2: aneurysm location segmentation)
+DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
+           DS_LOCATION: "TopAneuLocation"}
 
 PLANS_RESENC = "nnUNetResEncUNetMPlans"
 # trainers bundled in the author's nnUNet fork
 TRAINER_M1 = "RSNA2025Trainer_moreDAv7"
 TRAINER_M2 = "RSNA2025Trainer_moreDAv6_1_SkeletonRecallTverskyBeta07"   # backbone donor
 TRAINER_M3 = "RSNA2025Trainer_moreDAv6_SkeletonRecallW3TverskyBeta07"
+# [TOPANEU] Task 2 (aneurysm location segmentation): reuse M2's trainer -- aneurysms
+# are small/rare positives like the vessel skeletons that trainer was tuned for, and
+# its Tversky beta=0.7 already weights recall over precision, which matches a task
+# graded partly on false negatives (HD95 blows up on missed lesions).
+TRAINER_LOC = TRAINER_M2
 SEG_FOLD = "all"
 
 
