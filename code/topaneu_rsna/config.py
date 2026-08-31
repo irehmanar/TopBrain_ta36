@@ -71,9 +71,18 @@ SW_OVERLAP_FINE    = 0.3
 DS_COARSE   = 301   # Dataset301_TopAneuVesselGroup  (Model 1)
 DS_VESSEL   = 302   # Dataset302_TopAneuVessel       (Models 2 and 3)
 DS_LOCATION = 303   # Dataset303_TopAneuLocation     (Task 2, 52-class -- paused, see memory)
-DS_ANEURYSM = 304   # Dataset304_TopAneuAneurysm     (Task 2, binary aneurysm/background)
+DS_ANEURYSM = 304   # Dataset304_TopAneuAneurysm     (Task 2, binary, whole-head -- running)
+# [TOPANEU] second Task 2 attempt, in parallel with DS_ANEURYSM/304 above (which was
+# already running when this was added, so it gets its own dataset id rather than
+# reusing/overwriting 304): same binary aneurysm/background target, but built by
+# seg/build_aneurysm_roi_dataset.py instead of prep/build_nnunet_datasets.py --
+# ROI-cropped to the same 128x256x256 box final_roi.py uses (Model 2's predicted
+# vessel mask + margin) with Model 2's vessel mask as a second input channel, since
+# aneurysms only occur on vessels. See jobs/15-17.
+DS_ANEURYSM_ROI = 305   # Dataset305_TopAneuAneurysmROI (Task 2, binary, ROI + vessel channel)
 DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
-           DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm"}
+           DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm",
+           DS_ANEURYSM_ROI: "TopAneuAneurysmROI"}
 
 PLANS_RESENC = "nnUNetResEncUNetMPlans"
 # trainers bundled in the author's nnUNet fork
