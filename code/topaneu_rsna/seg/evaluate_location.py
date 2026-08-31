@@ -3,8 +3,9 @@ Task 2 scoring: aneurysm segmentation.
 
 Works against Dataset304_TopAneuAneurysm (binary, whole-head, --dataset 304,
 the default), Dataset305_TopAneuAneurysmROI (binary, ROI-cropped + vessel
-channel, --dataset 305), or, for reference, the paused 52-class
-Dataset303_TopAneuLocation via --dataset 303.
+channel, --dataset 305), Dataset306_TopAneuAneurysmVesselness (binary,
+whole-head + Frangi vesselness channel, --dataset 306), or, for reference,
+the paused 52-class Dataset303_TopAneuLocation via --dataset 303.
 
 Stitches together the 5 folds' nnU-Net validation predictions -- together they
 cover every training case exactly once as held-out data, so this is an honest
@@ -65,7 +66,7 @@ def hd95(pred, gt, spacing):
 
 
 def class_names_for(dataset_id: int) -> list[str]:
-    if dataset_id in (C.DS_ANEURYSM, C.DS_ANEURYSM_ROI):
+    if dataset_id in (C.DS_ANEURYSM, C.DS_ANEURYSM_ROI, C.DS_ANEURYSM_VESSELNESS):
         return ["aneurysm"]
     if dataset_id == C.DS_LOCATION:
         return C.load_labels().locations

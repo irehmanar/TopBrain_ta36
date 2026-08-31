@@ -37,6 +37,17 @@ VESSEL_PRED_M2  = WORK / "vessel_pred_m2"
 VESSEL_PRED_M3  = WORK / "vessel_pred_m3"
 CLS_CACHE_DIR   = WORK / "cls_cache"
 CLS_RESULTS_DIR = SCRATCH_ROOT / "cls_results"
+VESSELNESS_DIR  = WORK / "vesselness"    # prep/compute_vesselness.py output, one <case>.nii.gz per case
+# [TOPANEU] vesselness maps already computed (3-day Frangi run) for the unrelated
+# 01_rsna_pipeline/Dataset104_TopAneuLocationVesselness experiment, as
+# imagesTr/<case>_0001.nii.gz next to the original imagesTr/<case>_0000.nii.gz.
+# build_aneurysm_vesselness_dataset.py reads channel 1 from here by default so
+# Dataset306 doesn't have to recompute vesselness for cases already covered by it;
+# prep/compute_vesselness.py (job 18) only needs to run for cases missing from here.
+LEGACY_VESSELNESS_DIR = _p("LEGACY_VESSELNESS_DIR",
+                           str(Path(os.environ.get("SCRATCH", "/tmp"))
+                               / "TopAneu/experiments/01_rsna_pipeline/nnUNet_raw"
+                                 "/Dataset104_TopAneuLocationVesselness/imagesTr"))
 
 # ------------------------------------------------------- raw TopAneu layout (as shipped)
 IMAGES_DIR        = DATA_ROOT / "images"          # <case>_0000.nii.gz
@@ -80,9 +91,19 @@ DS_ANEURYSM = 304   # Dataset304_TopAneuAneurysm     (Task 2, binary, whole-head
 # vessel mask + margin) with Model 2's vessel mask as a second input channel, since
 # aneurysms only occur on vessels. See jobs/15-17.
 DS_ANEURYSM_ROI = 305   # Dataset305_TopAneuAneurysmROI (Task 2, binary, ROI + vessel channel)
+# [TOPANEU] binary aneurysm/background again (same target as DS_ANEURYSM/304), but with a
+# multi-scale Frangi vesselness response as a second input channel instead of a predicted
+# vessel mask. Unlike DS_ANEURYSM_ROI/305 this is whole-head, not ROI-cropped, so it needs
+# no Model 1/2 predictions (jobs 5/6). Channel 1 is reused as-is from the vesselness
+# already computed (a 3-day Frangi run) for the separate, untracked
+# 01_rsna_pipeline/Dataset104_TopAneuLocationVesselness experiment -- see
+# LEGACY_VESSELNESS_DIR below -- so it is NOT recomputed here; prep/compute_vesselness.py
+# (job 18, optional) only fills in any case Dataset104 doesn't cover. See jobs/18-21.
+DS_ANEURYSM_VESSELNESS = 306   # Dataset306_TopAneuAneurysmVesselness (Task 2, binary, vesselness channel)
 DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm",
-           DS_ANEURYSM_ROI: "TopAneuAneurysmROI"}
+           DS_ANEURYSM_ROI: "TopAneuAneurysmROI",
+           DS_ANEURYSM_VESSELNESS: "TopAneuAneurysmVesselness"}
 
 PLANS_RESENC = "nnUNetResEncUNetMPlans"
 # trainers bundled in the author's nnUNet fork
