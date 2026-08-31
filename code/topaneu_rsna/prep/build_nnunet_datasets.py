@@ -6,8 +6,13 @@ Create the nnU-Net datasets on scratch.
   --stage vessel   : Dataset302_TopAneuVessel, all V vessel classes, native spacing
                      (spacing is forced to (0.80,0.45,0.44) in the plans step)
   --stage location : Dataset303_TopAneuLocation, all 52 aneurysm-location classes
-                     [TOPANEU] Task 2 target -- same images/spacing as `vessel`,
-                     labels come from location_masks instead of vessel_masks.
+                     [TOPANEU] Task 2, 52-class attempt -- paused, collapses to
+                     all-background (see config.py TRAINER_LOC comment). Kept for
+                     reference; Dataset304 replaces it as the active Task 2 target.
+  --stage aneurysm : Dataset304_TopAneuAneurysm, binary aneurysm/background
+                     [TOPANEU] Task 2 target -- same images/spacing as `location`,
+                     labels are location_masks collapsed to a single foreground class
+                     (per-location assignment happens downstream via the classifier).
 
 All read from $TOPANEU_DATA, which is never modified.
 """
@@ -45,9 +50,11 @@ def _link_or_copy(src: Path, dst: Path):
     os.symlink(src.resolve(), dst)
 
 
-DS_ID = {"coarse": C.DS_COARSE, "vessel": C.DS_VESSEL, "location": C.DS_LOCATION}
-# stage -> (source mask dir, label names in class-index order)
-SOURCE_DIR = {"vessel": C.VESSEL_MASKS, "location": C.LOCATION_MASKS}
+DS_ID = {"coarse": C.DS_COARSE, "vessel": C.DS_VESSEL, "location": C.DS_LOCATION,
+        "aneurysm": C.DS_ANEURYSM}
+# stage -> source mask dir (coarse/aneurysm derive their labels, so aren't symlinked)
+SOURCE_DIR = {"vessel": C.VESSEL_MASKS, "location": C.LOCATION_MASKS,
+             "coarse": C.VESSEL_MASKS, "aneurysm": C.LOCATION_MASKS}
 
 
 def build(stage: str, limit: int | None):
@@ -66,8 +73,7 @@ def build(stage: str, limit: int | None):
     for i, v in enumerate(spec.vessels):
         v_to_group[i + 1] = spec.coarse_groups[v]
 
-    # `coarse` is derived from vessel_masks; `vessel`/`location` symlink their own source
-    src_dir = C.VESSEL_MASKS if stage == "coarse" else SOURCE_DIR[stage]
+    src_dir = SOURCE_DIR[stage]
 
     n = 0
     for case in tqdm(cases, desc=stage):
@@ -83,6 +89,9 @@ def build(stage: str, limit: int | None):
             lab, meta = uio.read(sp)
             grp = v_to_group[np.clip(lab.astype(np.int64), 0, spec.n_vessel)]
             uio.write(grp.astype(np.uint8), meta, root / "labelsTr" / f"{case}.nii.gz")
+        elif stage == "aneurysm":
+            lab, meta = uio.read(sp)
+            uio.write((lab > 0).astype(np.uint8), meta, root / "labelsTr" / f"{case}.nii.gz")
         else:
             _link_or_copy(sp, root / "labelsTr" / f"{case}.nii.gz")
         n += 1
@@ -93,6 +102,8 @@ def build(stage: str, limit: int | None):
     elif stage == "location":
         labels = {"background": 0}
         labels.update({loc: i + 1 for i, loc in enumerate(spec.locations)})
+    elif stage == "aneurysm":
+        labels = {"background": 0, "aneurysm": 1}
     else:
         labels = {"background": 0, "posterior_basilar": 1, "mca": 2, "other": 3}
     _write_json(root, labels, n)
@@ -101,7 +112,8 @@ def build(stage: str, limit: int | None):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", choices=["coarse", "vessel", "location"], required=True)
+    ap.add_argument("--stage", choices=["coarse", "vessel", "location", "aneurysm"],
+                    required=True)
     ap.add_argument("--limit", type=int, default=None)
     a = ap.parse_args()
     build(a.stage, a.limit)

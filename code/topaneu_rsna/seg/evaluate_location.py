@@ -1,5 +1,9 @@
 """
-Task 2 scoring: aneurysm location segmentation (Dataset303_TopAneuLocation).
+Task 2 scoring: aneurysm segmentation.
+
+Works against either Dataset304_TopAneuAneurysm (binary aneurysm/background --
+the active target, see config.py TRAINER_LOC) or, for reference, the paused
+52-class Dataset303_TopAneuLocation via --dataset 303.
 
 Stitches together the 5 folds' nnU-Net validation predictions -- together they
 cover every training case exactly once as held-out data, so this is an honest
@@ -17,6 +21,7 @@ per class:
   and FP a case where the class was predicted but no ground truth exists.
 
     python -m topaneu_rsna.seg.evaluate_location
+    python -m topaneu_rsna.seg.evaluate_location --dataset 303   # reference only
 """
 from __future__ import annotations
 
@@ -58,13 +63,21 @@ def hd95(pred, gt, spacing):
     return float(np.percentile(d, 95))
 
 
-def evaluate(dataset_id: int, trainer: str, plans: str, folds: list[int]):
-    spec = C.load_labels()
+def class_names_for(dataset_id: int) -> list[str]:
+    if dataset_id == C.DS_ANEURYSM:
+        return ["aneurysm"]
+    if dataset_id == C.DS_LOCATION:
+        return C.load_labels().locations
+    raise ValueError(f"no known class list for dataset {dataset_id}")
+
+
+def evaluate(dataset_id: int, trainer: str, plans: str, folds: list[int],
+            class_names: list[str]):
     gt_dir = C.nnUNet_raw / f"Dataset{dataset_id:03d}_{C.DS_NAMES[dataset_id]}" / "labelsTr"
     model_dir = (C.nnUNet_results / f"Dataset{dataset_id:03d}_{C.DS_NAMES[dataset_id]}"
                  / f"{trainer}__{plans}__3d_fullres")
 
-    n_cls = spec.n_loc
+    n_cls = len(class_names)
     inter = np.zeros(n_cls); pred_sum = np.zeros(n_cls); gt_sum = np.zeros(n_cls)
     tp = np.zeros(n_cls); fp = np.zeros(n_cls); fn = np.zeros(n_cls); tn = np.zeros(n_cls)
     hd_sum = np.zeros(n_cls); hd_n = np.zeros(n_cls)
@@ -110,29 +123,32 @@ def evaluate(dataset_id: int, trainer: str, plans: str, folds: list[int]):
         mcc = mcc_num / mcc_den
         hd = hd_sum / hd_n
 
-    return spec, n_cases, dict(dice=dice, vs=vs, hd95=hd, precision=precision,
-                               recall=recall, mcc=mcc, tp=tp, fp=fp, fn=fn, tn=tn)
+    return n_cases, dict(dice=dice, vs=vs, hd95=hd, precision=precision,
+                         recall=recall, mcc=mcc, tp=tp, fp=fp, fn=fn, tn=tn)
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", type=int, default=C.DS_LOCATION)
+    ap.add_argument("--dataset", type=int, default=C.DS_ANEURYSM)
     ap.add_argument("--trainer", default=C.TRAINER_LOC)
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
-    ap.add_argument("--out", type=Path, default=C.LOG_ROOT / "seg_eval_location.csv")
+    ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args()
 
-    spec, n_cases, m = evaluate(a.dataset, a.trainer, a.plans, a.folds)
+    class_names = class_names_for(a.dataset)
+    out = a.out or C.LOG_ROOT / f"seg_eval_{C.DS_NAMES[a.dataset]}.csv"
+
+    n_cases, m = evaluate(a.dataset, a.trainer, a.plans, a.folds, class_names)
     print(f"pooled {n_cases} held-out cases across folds {a.folds}\n")
 
-    a.out.parent.mkdir(parents=True, exist_ok=True)
-    with open(a.out, "w", newline="") as f:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["location", "dice", "vs", "hd95_mm", "precision", "recall", "mcc",
+        w.writerow(["class", "dice", "vs", "hd95_mm", "precision", "recall", "mcc",
                     "tp", "fp", "fn", "tn"])
-        for i, loc in enumerate(spec.locations):
-            w.writerow([loc, m["dice"][i], m["vs"][i], m["hd95"][i], m["precision"][i],
+        for i, name in enumerate(class_names):
+            w.writerow([name, m["dice"][i], m["vs"][i], m["hd95"][i], m["precision"][i],
                         m["recall"][i], m["mcc"][i], int(m["tp"][i]), int(m["fp"][i]),
                         int(m["fn"][i]), int(m["tn"][i])])
 
@@ -142,7 +158,7 @@ def main():
     print(f"{'metric':<12}{'mean over classes':>20}")
     for k in ("dice", "vs", "hd95", "precision", "recall", "mcc"):
         print(f"{k:<12}{nanmean(m[k]):>20.4f}")
-    print(f"\nper-class detail written to {a.out}")
+    print(f"\nper-class detail written to {out}")
 
 
 if __name__ == "__main__":
