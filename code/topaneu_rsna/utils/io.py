@@ -62,19 +62,30 @@ def resample_to_reference(moving_path, reference_path, is_label=False):
     }
 
 
+def read_header(path):
+    """Header-only read (no pixel data) -- shape in (z, y, x) to match `read`."""
+    r = sitk.ImageFileReader()
+    r.SetFileName(str(path))
+    r.ReadImageInformation()
+    return {
+        "shape": tuple(r.GetSize()[::-1]),
+        "spacing": tuple(r.GetSpacing()[::-1]),
+        "origin": r.GetOrigin(),
+        "direction": r.GetDirection(),
+    }
+
+
 def physical_overlap_frac(path_a, path_b) -> float:
     """Fraction of image A's world-space bounding box that B's bounding box
     covers -- a cheap (header-only) sanity check that two differently-gridded
     volumes plausibly represent the same physical region before resampling
     one onto the other's grid."""
     def bbox(path):
-        r = sitk.ImageFileReader()
-        r.SetFileName(str(path))
-        r.ReadImageInformation()  # header only, no pixel data
-        size = np.asarray(r.GetSize(), np.float64)
-        origin = np.asarray(r.GetOrigin(), np.float64)
-        spacing = np.asarray(r.GetSpacing(), np.float64)
-        direction = np.asarray(r.GetDirection(), np.float64).reshape(3, 3)
+        h = read_header(path)
+        size = np.asarray(h["shape"][::-1], np.float64)          # (x, y, z)
+        origin = np.asarray(h["origin"], np.float64)
+        spacing = np.asarray(h["spacing"][::-1], np.float64)     # (x, y, z)
+        direction = np.asarray(h["direction"], np.float64).reshape(3, 3)
         corners = [origin + direction @ (spacing * np.asarray(idx))
                   for idx in ((0, 0, 0), (size[0] - 1, 0, 0), (0, size[1] - 1, 0),
                              (0, 0, size[2] - 1), (size[0] - 1, size[1] - 1, 0),
