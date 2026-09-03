@@ -104,10 +104,33 @@ DS_ANEURYSM_ROI = 305   # Dataset305_TopAneuAneurysmROI (Task 2, binary, ROI + v
 # world-space assumption between two different image grids; recomputing (~3 days)
 # was judged worth it for correctness. See jobs/18-21.
 DS_ANEURYSM_VESSELNESS = 306   # Dataset306_TopAneuAneurysmVesselness (Task 2, binary, vesselness channel)
+# [TOPANEU] revisiting the 52-class direct segmentation that collapsed as Dataset303,
+# this time (a) conditioned on an existing vessel model's own prediction as a second
+# input channel, since aneurysms only occur on vessels, and (b) initialized from that
+# same model's trained weights (nnUNetv2_train -pretrained_weights) instead of random
+# init -- the same transfer-learning lever that took the ROI classifier from 0.794 to
+# 0.902 AUC when pretrained from Model 2. Two variants, built by
+# seg/build_location_conditioned_dataset.py from job 05/06's *existing* outputs --
+# neither needs new segmentation inference:
+#   DS_LOCATION_M1COND -- whole-head, native grid. ch0=raw image, ch1=Model 1's
+#     3-class vessel-group prediction (COARSE_PRED_DIR, already computed by job 05
+#     for every case on this exact grid). Warm-start from Model 1's fold_all checkpoint.
+#   DS_LOCATION_M2COND -- coarse-ROI-cropped grid (140mm cube, FINE_SPACING). ch0/ch1/
+#     label are job 05/06's existing coarse-ROI image, Model 2's 36-class prediction,
+#     and cropped location mask -- already grid-aligned. Warm-start from Model 2's
+#     fold_all checkpoint.
+# Channel-conditioning and warm-starting address different things than the earlier
+# 303 postmortem's root cause (most patches contain at most one of 52 classes, too
+# sparse for the loss to escape all-background) -- this doesn't fix that on its own,
+# still worth pairing with class-balanced sampling if it doesn't fully resolve it.
+DS_LOCATION_M1COND = 307   # Dataset307_TopAneuLocationM1Cond (Task 2, 52-class, +Model1 channel)
+DS_LOCATION_M2COND = 308   # Dataset308_TopAneuLocationM2Cond (Task 2, 52-class, +Model2 channel, ROI)
 DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm",
            DS_ANEURYSM_ROI: "TopAneuAneurysmROI",
-           DS_ANEURYSM_VESSELNESS: "TopAneuAneurysmVesselness"}
+           DS_ANEURYSM_VESSELNESS: "TopAneuAneurysmVesselness",
+           DS_LOCATION_M1COND: "TopAneuLocationM1Cond",
+           DS_LOCATION_M2COND: "TopAneuLocationM2Cond"}
 
 PLANS_RESENC = "nnUNetResEncUNetMPlans"
 # trainers bundled in the author's nnUNet fork
