@@ -19,11 +19,14 @@ and the rest of the checkpoint (everything but the resized layer and the
 already-skipped seg_layers) loads unchanged. Gradients still flow into the new
 channel's weights normally during training.
 
-The stem's first conv is registered under two different attribute paths in
-this architecture (`...conv.weight` and `...all_modules.0.weight`, same
-underlying weights, two names) -- the checkpoint stores both as separate
-dict entries, and nnU-Net's loader can walk either name depending on the
-network variant, so *both* aliases get widened, not just one.
+The stem's first conv is registered under multiple attribute paths in this
+architecture -- `encoder.stem.convs.0.{conv,all_modules.0}.weight` (the same
+underlying weights exposed two ways) *and*, because the decoder holds a
+reference to the same encoder object for skip connections, that whole pair
+again under a `decoder.encoder.` prefix. All are separate entries in the
+checkpoint's state dict, and nnU-Net's loader can walk any of them depending
+on the network wrapper -- so instead of hardcoding each alias as it's
+discovered, every key matching the stem-conv pattern gets widened.
 
     python -m topaneu_rsna.seg.expand_pretrained_channels \\
         --in_ckpt  nnUNet_results/Dataset301.../fold_all/checkpoint_final.pth \\
@@ -33,9 +36,15 @@ network variant, so *both* aliases get widened, not just one.
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 
 import torch
+
+# Matches the stem's first conv weight under any prefix (`encoder.`,
+# `decoder.encoder.`, or whatever else this architecture aliases it as) and
+# either of its two attribute names (`.conv.weight` or `.all_modules.0.weight`).
+STEM_CONV_PATTERN = re.compile(r"stem\.convs\.0\.(conv|all_modules\.0)\.weight$")
 
 
 def main():
@@ -43,22 +52,24 @@ def main():
     ap.add_argument("--in_ckpt", type=Path, required=True)
     ap.add_argument("--out_ckpt", type=Path, required=True)
     ap.add_argument("--extra_channels", type=int, default=1)
-    ap.add_argument("--stem_key", nargs="+", default=[
-        "encoder.stem.convs.0.conv.weight",
-        "encoder.stem.convs.0.all_modules.0.weight",
-    ], help="candidate key(s) for the first conv layer's weight -- every one "
-            "that's present gets widened (they may be aliases of the same "
-            "underlying weights); add more via the AssertionError message "
-            "if training still fails on a different key name")
+    ap.add_argument("--stem_key", nargs="+", default=None,
+                    help="override auto-detection with exact key(s) instead "
+                         "(auto-detection matches any prefix ending in "
+                         "'stem.convs.0.conv.weight' or "
+                         "'stem.convs.0.all_modules.0.weight')")
     a = ap.parse_args()
 
     ckpt = torch.load(a.in_ckpt, map_location="cpu", weights_only=False)
     weights = ckpt["network_weights"]
 
-    found = [k for k in a.stem_key if k in weights]
+    if a.stem_key:
+        found = [k for k in a.stem_key if k in weights]
+    else:
+        found = [k for k in weights if STEM_CONV_PATTERN.search(k)]
     if not found:
-        raise KeyError(f"None of {a.stem_key} found in checkpoint. Keys starting "
-                       f"'encoder.stem': {[k for k in weights if k.startswith('encoder.stem')]}")
+        raise KeyError("No stem-conv key found in checkpoint (pattern "
+                       f"{STEM_CONV_PATTERN.pattern!r}). Keys containing 'stem': "
+                       f"{[k for k in weights if 'stem' in k]}")
 
     for key in found:
         w = weights[key]
