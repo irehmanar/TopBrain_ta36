@@ -70,11 +70,18 @@ def load_oof_probs(results_dir: Path) -> dict:
     return probs
 
 
-def load_binary_pred_paths(dataset_id: int, trainer: str, plans: str, folds) -> dict:
+def load_binary_pred_paths(dataset_id: int, trainer: str, plans: str, folds,
+                           model_dir: Path | None = None) -> dict:
     """case -> path to its held-out binary prediction, pooled across the
-    folds' `validation` dirs (same source evaluate_location.py reads)."""
-    model_dir = (C.nnUNet_results / f"Dataset{dataset_id:03d}_{C.DS_NAMES[dataset_id]}"
-                / f"{trainer}__{plans}__3d_fullres")
+    folds' `validation` dirs (same source evaluate_location.py reads).
+
+    `model_dir`, if given, is used as-is instead of being reconstructed as
+    `{trainer}__{plans}__3d_fullres` -- for results kept under a renamed
+    (e.g. `__backup_<timestamp>`) directory rather than nnU-Net's default
+    naming."""
+    model_dir = model_dir or (C.nnUNet_results
+                              / f"Dataset{dataset_id:03d}_{C.DS_NAMES[dataset_id]}"
+                              / f"{trainer}__{plans}__3d_fullres")
     out = {}
     for fold in folds:
         val_dir = model_dir / f"fold_{fold}" / "validation"
@@ -200,6 +207,10 @@ def main():
     ap.add_argument("--binary_dataset", type=int, default=C.DS_ANEURYSM)
     ap.add_argument("--trainer", default=C.TRAINER_LOC)
     ap.add_argument("--plans", default=C.PLANS_RESENC)
+    ap.add_argument("--model_dir", type=Path, default=None,
+                    help="use this exact nnU-Net results dir instead of "
+                         "reconstructing {trainer}__{plans}__3d_fullres -- "
+                         "for results kept under a renamed/backup directory")
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--cls_results_dir", type=Path, default=C.CLS_RESULTS_DIR)
     ap.add_argument("--thresholds", type=float, nargs="+",
@@ -213,7 +224,8 @@ def main():
     n_loc = spec.n_loc
 
     probs = load_oof_probs(a.cls_results_dir)
-    bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
+    bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds,
+                                       a.model_dir)
 
     cases = sorted(set(probs) & set(bin_paths))
     print(f"{len(cases)} cases with both a binary prediction and a classifier OOF probability")
