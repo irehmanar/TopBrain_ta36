@@ -8,7 +8,7 @@ only skips '.seg_layers.' keys -- every other key must match in *shape* or it
 hard-asserts. Feeding Model 1's 1-channel checkpoint straight into Dataset307's
 2-channel network trips exactly that assertion on the stem's first conv layer.
 
-Fix: rewrite just that one layer's weight tensor from
+Fix: rewrite that layer's weight tensor from
     (out_ch, in_ch,      k, k, k)
 to
     (out_ch, in_ch+extra, k, k, k)
@@ -18,6 +18,12 @@ the *identical* output Model 1 did (the new channel contributes nothing yet),
 and the rest of the checkpoint (everything but the resized layer and the
 already-skipped seg_layers) loads unchanged. Gradients still flow into the new
 channel's weights normally during training.
+
+The stem's first conv is registered under two different attribute paths in
+this architecture (`...conv.weight` and `...all_modules.0.weight`, same
+underlying weights, two names) -- the checkpoint stores both as separate
+dict entries, and nnU-Net's loader can walk either name depending on the
+network variant, so *both* aliases get widened, not just one.
 
     python -m topaneu_rsna.seg.expand_pretrained_channels \\
         --in_ckpt  nnUNet_results/Dataset301.../fold_all/checkpoint_final.pth \\
@@ -37,26 +43,32 @@ def main():
     ap.add_argument("--in_ckpt", type=Path, required=True)
     ap.add_argument("--out_ckpt", type=Path, required=True)
     ap.add_argument("--extra_channels", type=int, default=1)
-    ap.add_argument("--stem_key", default="encoder.stem.convs.0.conv.weight",
-                    help="the first conv layer's weight key (confirm via the "
-                         "AssertionError message if training still fails)")
+    ap.add_argument("--stem_key", nargs="+", default=[
+        "encoder.stem.convs.0.conv.weight",
+        "encoder.stem.convs.0.all_modules.0.weight",
+    ], help="candidate key(s) for the first conv layer's weight -- every one "
+            "that's present gets widened (they may be aliases of the same "
+            "underlying weights); add more via the AssertionError message "
+            "if training still fails on a different key name")
     a = ap.parse_args()
 
     ckpt = torch.load(a.in_ckpt, map_location="cpu", weights_only=False)
     weights = ckpt["network_weights"]
 
-    if a.stem_key not in weights:
-        raise KeyError(f"{a.stem_key} not found in checkpoint. Keys starting "
+    found = [k for k in a.stem_key if k in weights]
+    if not found:
+        raise KeyError(f"None of {a.stem_key} found in checkpoint. Keys starting "
                        f"'encoder.stem': {[k for k in weights if k.startswith('encoder.stem')]}")
 
-    w = weights[a.stem_key]
-    out_ch, in_ch, *k = w.shape
-    pad = torch.zeros((out_ch, a.extra_channels, *k), dtype=w.dtype)
-    weights[a.stem_key] = torch.cat([w, pad], dim=1)
+    for key in found:
+        w = weights[key]
+        out_ch, _, *k = w.shape
+        pad = torch.zeros((out_ch, a.extra_channels, *k), dtype=w.dtype)
+        weights[key] = torch.cat([w, pad], dim=1)
+        print(f"{key}: {tuple(w.shape)} -> {tuple(weights[key].shape)}")
 
     a.out_ckpt.parent.mkdir(parents=True, exist_ok=True)
     torch.save(ckpt, a.out_ckpt)
-    print(f"{a.stem_key}: {tuple(w.shape)} -> {tuple(weights[a.stem_key].shape)}")
     print(f"wrote {a.out_ckpt}")
 
 
