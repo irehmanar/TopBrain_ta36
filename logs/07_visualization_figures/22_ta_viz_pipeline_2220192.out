@@ -1,0 +1,49 @@
+============================================================
+TopAneu pipeline visualization (Model 1 / 2 / 3 -> slide PNGs)
+Job ID:       2220192
+Node:         nc11118
+Start:        Tue Sep  1 15:53:48 EDT 2026
+============================================================
+==============================================
+TopAneu RSNA Pipeline Environment
+==============================================
+TOPANEU_ROOT        = /home/abdul7/projects/def-punithak/abdul7/TopAneu
+EXP_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+CODE_ROOT           = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/code
+TOPANEU_DATA        = /home/abdul7/projects/def-punithak/abdul7/TopAneu/data
+
+SCRATCH_ROOT        = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+nnUNet_raw          = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw
+nnUNet_preprocessed = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed
+nnUNet_results      = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_results
+LOG_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs
+
+Python:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/python
+
+nnUNet:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/nnUNetv2_train
+
+Scratch:
+Filesystem                                   Size  Used Avail Use% Mounted on
+10.82.48.7@o2ib1:10.82.48.8@o2ib1:/lustre07   19T  481G   19T   3% /scratch
+==============================================
+============================================================
+N_CASES:      5
+OUT_DIR:      /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz
+============================================================
+Visualizing 5 case(s): ['topaneu_center1_mr_188', 'topaneu_center1_mr_902', 'topaneu_center1_mr_910', 'topaneu_center2_mr_050', 'topaneu_center4_ct_065']
+  -> /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz/topaneu_center1_mr_188_pipeline.png
+  -> /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz/topaneu_center1_mr_902_pipeline.png
+  -> /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz/topaneu_center1_mr_910_pipeline.png
+  -> /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz/topaneu_center2_mr_050_pipeline.png
+  -> /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz/topaneu_center4_ct_065_pipeline.png
+  -> /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz/vessel_legend.png
+5/5 figures written to /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz
+============================================================
+Figures written to: /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz
+Copy them to your laptop for slides, e.g. from your machine:
+  scp -r <cluster>:/home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/figures/pipeline_viz ./pipeline_viz
+TopAneu pipeline visualization COMPLETE
+End: Tue Sep  1 15:54:41 EDT 2026
+============================================================

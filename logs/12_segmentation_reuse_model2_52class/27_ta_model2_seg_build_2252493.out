@@ -1,0 +1,100 @@
+============================================================
+TopAneu Task 2: build + plan + preprocess Dataset308_TopAneuLocationM2Cond
+52-class location, coarse-ROI-cropped, +Model2 vessel channel.
+Reuses jobs 05/06's existing outputs -- no new GPU inference here.
+Job ID:       2252493
+Node:         nc10916
+Start:        Wed Sep  2 22:56:00 EDT 2026
+============================================================
+==============================================
+TopAneu RSNA Pipeline Environment
+==============================================
+TOPANEU_ROOT        = /home/abdul7/projects/def-punithak/abdul7/TopAneu
+EXP_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+CODE_ROOT           = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/code
+TOPANEU_DATA        = /home/abdul7/projects/def-punithak/abdul7/TopAneu/data
+
+SCRATCH_ROOT        = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+nnUNet_raw          = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw
+nnUNet_preprocessed = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed
+nnUNet_results      = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_results
+LOG_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs
+
+Python:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/python
+
+nnUNet:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/nnUNetv2_train
+
+Scratch:
+Filesystem                                   Size  Used Avail Use% Mounted on
+10.82.48.7@o2ib1:10.82.48.8@o2ib1:/lustre07   19T  481G   19T   3% /scratch
+==============================================
+==============================================
+Building Dataset 308 (coarse-ROI image + Model2 channel + cropped location label)
+==============================================
+/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset308_TopAneuLocationM2Cond  (417 cases, 52 classes)
+pretrained checkpoint for -pretrained_weights: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_results/Dataset302_TopAneuVessel/RSNA2025Trainer_moreDAv6_1_SkeletonRecallTverskyBeta07__nnUNetResEncUNetMPlans__3d_fullres/fold_all/checkpoint_final.pth
+==============================================
+Planning Dataset 308
+==============================================
+Fingerprint extraction...
+Dataset308_TopAneuLocationM2Cond
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+
+####################
+verify_dataset_integrity Done. 
+If you didn't see any error messages then your dataset is most likely OK!
+####################
+
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+Experiment planning...
+Attempting to find 3d_lowres config. 
+Current spacing: [0.82400001 0.46349999 0.4532    ]. 
+Current patch size: (np.int64(80), np.int64(160), np.int64(160)). 
+Current median shape: [129.12621359 301.94174757 304.85436893]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.84872001 0.47740499 0.466796  ]. 
+Current patch size: (np.int64(80), np.int64(160), np.int64(160)). 
+Current median shape: [125.36525591 293.14732774 295.97511547]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.87418161 0.49172714 0.48079988]. 
+Current patch size: (np.int64(80), np.int64(160), np.int64(160)). 
+Current median shape: [121.71384069 284.60905606 287.35448104]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.90040706 0.50647895 0.49522387]. 
+Current patch size: (np.int64(80), np.int64(160), np.int64(160)). 
+Current median shape: [118.16877737 276.3194719  278.98493305]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.92741927 0.52167332 0.51008059]. 
+Current patch size: (np.int64(80), np.int64(160), np.int64(160)). 
+Current median shape: [114.72696832 268.27133194 270.8591583 ]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.95524185 0.53732352 0.52538301]. 
+Current patch size: (np.int64(80), np.int64(160), np.int64(160)). 
+Current median shape: [111.38540614 260.45760383 262.9700566 ]
+Dropping 3d_lowres config because the image size difference to 3d_fullres is too small. 3d_fullres: [133. 311. 314.], 3d_lowres: [111, 260, 263]
+2D U-Net configuration:
+{'data_identifier': 'nnUNetPlans_2d', 'preprocessor_name': 'DefaultPreprocessor', 'batch_size': 29, 'patch_size': (np.int64(320), np.int64(320)), 'median_image_size_in_voxels': array([311., 314.]), 'spacing': array([0.44999999, 0.44      ]), 'normalization_schemes': ['ZScoreNormalization', 'ZScoreNormalization'], 'use_mask_for_norm': [True, True], 'resampling_fn_data': 'resample_data_or_seg_to_shape', 'resampling_fn_seg': 'resample_data_or_seg_to_shape', 'resampling_fn_data_kwargs': {'is_seg': False, 'order': 3, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_seg_kwargs': {'is_seg': True, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_probabilities': 'resample_data_or_seg_to_shape', 'resampling_fn_probabilities_kwargs': {'is_seg': False, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'architecture': {'network_class_name': 'dynamic_network_architectures.architectures.unet.ResidualEncoderUNet', 'arch_kwargs': {'n_stages': 7, 'features_per_stage': (32, 64, 128, 256, 512, 512, 512), 'conv_op': 'torch.nn.modules.conv.Conv2d', 'kernel_sizes': ((3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)), 'strides': ((1, 1), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)), 'n_blocks_per_stage': (1, 3, 4, 6, 6, 6, 6), 'n_conv_per_stage_decoder': (1, 1, 1, 1, 1, 1), 'conv_bias': True, 'norm_op': 'torch.nn.modules.instancenorm.InstanceNorm2d', 'norm_op_kwargs': {'eps': 1e-05, 'affine': True}, 'dropout_op': None, 'dropout_op_kwargs': None, 'nonlin': 'torch.nn.LeakyReLU', 'nonlin_kwargs': {'inplace': True}}, '_kw_requires_import': ('conv_op', 'norm_op', 'dropout_op', 'nonlin')}, 'batch_dice': True}
+
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+3D fullres U-Net configuration:
+{'data_identifier': 'nnUNetPlans_3d_fullres', 'preprocessor_name': 'DefaultPreprocessor', 'batch_size': 2, 'patch_size': (np.int64(80), np.int64(160), np.int64(160)), 'median_image_size_in_voxels': array([133., 311., 314.]), 'spacing': array([0.80000001, 0.44999999, 0.44      ]), 'normalization_schemes': ['ZScoreNormalization', 'ZScoreNormalization'], 'use_mask_for_norm': [True, True], 'resampling_fn_data': 'resample_data_or_seg_to_shape', 'resampling_fn_seg': 'resample_data_or_seg_to_shape', 'resampling_fn_data_kwargs': {'is_seg': False, 'order': 3, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_seg_kwargs': {'is_seg': True, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_probabilities': 'resample_data_or_seg_to_shape', 'resampling_fn_probabilities_kwargs': {'is_seg': False, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'architecture': {'network_class_name': 'dynamic_network_architectures.architectures.unet.ResidualEncoderUNet', 'arch_kwargs': {'n_stages': 6, 'features_per_stage': (32, 64, 128, 256, 320, 320), 'conv_op': 'torch.nn.modules.conv.Conv3d', 'kernel_sizes': ((3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)), 'strides': ((1, 1, 1), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)), 'n_blocks_per_stage': (1, 3, 4, 6, 6, 6), 'n_conv_per_stage_decoder': (1, 1, 1, 1, 1), 'conv_bias': True, 'norm_op': 'torch.nn.modules.instancenorm.InstanceNorm3d', 'norm_op_kwargs': {'eps': 1e-05, 'affine': True}, 'dropout_op': None, 'dropout_op_kwargs': None, 'nonlin': 'torch.nn.LeakyReLU', 'nonlin_kwargs': {'inplace': True}}, '_kw_requires_import': ('conv_op', 'norm_op', 'dropout_op', 'nonlin')}, 'batch_dice': False}
+
+Plans were saved to /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed/Dataset308_TopAneuLocationM2Cond/nnUNetResEncUNetMPlans.json
+Preprocessing...
+Preprocessing dataset Dataset308_TopAneuLocationM2Cond
+Configuration: 3d_fullres...
+==============================================
+Applying custom patch plans to Dataset 308
+==============================================
+patched /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed/Dataset308_TopAneuLocationM2Cond/nnUNetResEncUNetMPlans.json: spacing=[0.8, 0.45, 0.44] patch=[128, 256, 256]
+==============================================
+Preprocessing Dataset 308
+==============================================
+Preprocessing dataset Dataset308_TopAneuLocationM2Cond
+Configuration: 3d_fullres...
+============================================================
+TopAneu Dataset 308 build COMPLETE
+End: Wed Sep  2 23:50:35 EDT 2026
+============================================================

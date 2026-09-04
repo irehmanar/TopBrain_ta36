@@ -1,0 +1,37 @@
+============================================================
+TopAneu Task 2: binary-seg + classifier fusion, threshold sweep
+Job ID:       2353028
+Node:         nc31109
+Start:        Thu Sep  3 21:26:33 EDT 2026
+============================================================
+==============================================
+TopAneu RSNA Pipeline Environment
+==============================================
+TOPANEU_ROOT        = /home/abdul7/projects/def-punithak/abdul7/TopAneu
+EXP_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+CODE_ROOT           = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/code
+TOPANEU_DATA        = /home/abdul7/projects/def-punithak/abdul7/TopAneu/data
+
+SCRATCH_ROOT        = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+nnUNet_raw          = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw
+nnUNet_preprocessed = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed
+nnUNet_results      = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_results
+LOG_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs
+
+Python:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/python
+
+nnUNet:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/nnUNetv2_train
+
+Scratch:
+Filesystem                                   Size  Used Avail Use% Mounted on
+10.82.48.7@o2ib1:10.82.48.8@o2ib1:/lustre07   19T  562G   19T   3% /scratch
+==============================================
+============================================================
+Prerequisites:
+  nnUNet_results/Dataset305_TopAneuAneurysmROI/*/fold_{0,1,2}/validation/
+  $CLS_RESULTS_DIR/fold_*/oof.npz
+============================================================
+0 cases with both a binary prediction and a classifier OOF probability
+  417 OOF rows skipped (no binary prediction)

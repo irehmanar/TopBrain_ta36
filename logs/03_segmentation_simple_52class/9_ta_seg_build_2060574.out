@@ -1,0 +1,261 @@
+============================================================
+TopAneu Task 2: build + plan + preprocess Dataset303_TopAneuLocation
+Job ID:       2060574
+Node:         nc10348
+Start:        Sat Aug 29 15:57:21 EDT 2026
+============================================================
+==============================================
+TopAneu RSNA Pipeline Environment
+==============================================
+TOPANEU_ROOT        = /home/abdul7/projects/def-punithak/abdul7/TopAneu
+EXP_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+CODE_ROOT           = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/code
+TOPANEU_DATA        = /home/abdul7/projects/def-punithak/abdul7/TopAneu/data
+
+SCRATCH_ROOT        = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+nnUNet_raw          = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw
+nnUNet_preprocessed = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed
+nnUNet_results      = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_results
+LOG_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs
+
+Python:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/python
+
+nnUNet:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/nnUNetv2_train
+
+Scratch:
+Filesystem                                   Size  Used Avail Use% Mounted on
+10.82.48.7@o2ib1:10.82.48.8@o2ib1:/lustre07   19T  420G   19T   3% /scratch
+==============================================
+==============================================
+Building Dataset 303 (location_masks -> nnU-Net raw)
+==============================================
+/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation  (417 cases, 52 classes)
+==============================================
+Planning Dataset 303
+==============================================
+Fingerprint extraction...
+Dataset303_TopAneuLocation
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9998785618644498, -0.01557129506433872, 0.0006294610792924869, 0.015569567311640916, 0.9998752331923536, 0.002665838633890102, -0.0006708931420281038, -0.0026557143212019942, 0.9999962485345272). 
+Direction seg: (0.9998786107078103, -0.015568160992591883, 0.0006294652265848885, 0.015566430456317863, 0.9998752819914951, 0.0026658377607751203, -0.0006708888638699657, -0.002655715673175593, 0.9999962485342442). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_079_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_079.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9991791463386133, -0.025692900032901145, -0.03131946361359407, 0.02538427986273224, 0.9996256059312175, -0.010212062823945153, 0.031570110197627115, 0.00940865848809732, 0.9994572551999593). 
+Direction seg: (0.9991792013304625, -0.025690750585321793, -0.031319470602085814, 0.025382130427388017, 0.9996256608494688, -0.010212030228827142, 0.03157009793437558, 0.009408693088079035, 0.9994572553140082). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_081_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_081.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.994386614408601, 0.10504102014504133, 0.012720896061070146, -0.10580596158795198, 0.987839227451454, 0.1139235846106075, -0.0005996477710823522, -0.11463003443689428, 0.993408071072947). 
+Direction seg: (0.9943865694347508, 0.10504059724168732, 0.012720895307845452, -0.10580638453723203, 0.9878392728366245, 0.11392357786500902, -0.0005995989886640829, -0.11463003085020348, 0.9934080718561743). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center1_mr_694_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center1_mr_694.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9987176367360965, -0.05059285628034535, 0.0018561396365788174, 0.05058670029441061, 0.9987144680502097, 0.0032244025591832977, -0.0020168851206768504, -0.0031263717922219375, 0.9999930789629425). 
+Direction seg: (0.9987175533346362, -0.050594499341994274, 0.0018561368849445694, 0.05058834672887567, 0.9987143848205481, 0.0032244040408339024, -0.0020168878295819905, -0.0031263699152643625, 0.9999930789632725). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_031_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_031.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9935717044646342, -0.11104204833882948, -0.02202114768742475, 0.11310208359489991, 0.9654356125492674, 0.23482332135444603, -0.004815264658788311, -0.23580445611213133, 0.9717885967650552). 
+Direction seg: (0.9935716356265114, -0.111042658602863, -0.022021218134067294, 0.11310268525845084, 0.9654355421155986, 0.2348233001320785, -0.004815336518520094, -0.23580445710454312, 0.9717886002968813). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_032_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_032.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9971252759382452, -0.07458137062769436, -0.013371686698730085, 0.07546575786919615, 0.993340991808497, 0.08705512180398499, 0.006789953925175513, -0.08781396898105656, 0.9961137504133372). 
+Direction seg: (0.9971253690244094, -0.07458015112474747, -0.013371631519095005, 0.0754645231260739, 0.9933410840878043, 0.08705512186822952, 0.006790007164175591, -0.08781396085746132, 0.9961137511484445). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_033_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_033.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9896268915650307, 0.14366099226820048, -0.0003695866761508449, -0.14338437584292768, 0.9878745942781514, 0.059537417915376985, 0.00891831012407633, -0.05886684364133888, 0.9982260061096679). 
+Direction seg: (0.9896270300842586, 0.14366003670175068, -0.00036961534893602786, -0.14338342164749107, 0.987874733854772, 0.059537412415359516, 0.008918280286467718, -0.05886683332926249, 0.9982260064270903). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_034_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_034.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9929103104514668, 0.0034659254483340343, -0.11881541076199795, 1.1165963096529137e-05, 0.9995720832969875, 0.029251497464559472, 0.11886595506911483, -0.029045441193186913, 0.9924853893441145). 
+Direction seg: (0.9929101958805799, 0.003531254244214962, -0.11881444898904155, -5.4163035777470074e-05, 0.9995719678505105, 0.02925539548005283, 0.11886690028243244, -0.029041544912771496, 0.9924853895885501). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_039_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_039.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.997131460692253, -0.07567334145989475, 0.0015475860860298916, 0.07568081567823168, 0.9971167406812053, -0.005533539661992185, -0.0011243825023452044, 0.005634788867754288, 0.999983492321806). 
+Direction seg: (0.9971315514406099, -0.07567215129947469, 0.0015475830301304293, 0.07567961996189716, 0.9971168310082517, -0.005533540244077064, -0.001124386083628804, 0.005634788174461804, 0.9999834923233143). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_052_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_052.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9974649679221141, 0.07111999402796974, 0.002263268540307079, -0.0709896464974174, 0.9923898822498227, 0.10061435702554486, 0.004909975387675205, -0.10051998834880865, 0.9949229260479681). 
+Direction seg: (0.9974650835795915, 0.07112161744306407, 0.0022632681522207912, -0.0709880327170719, 0.9923897682249901, 0.10061435702563325, 0.004909811658144466, -0.1005199654528038, 0.994922926048842). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center2_mr_011_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center2_mr_011.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9954506510148491, -0.06752720421521011, -0.06721663146431392, 0.07327444510640461, 0.9935037327862365, 0.08707002317644062, 0.06090038660354852, -0.0915991792031561, 0.9939319571875354). 
+Direction seg: (0.9954505121671051, -0.06752917433754162, -0.06721672515327269, 0.07327640983931834, 0.9935035917452102, 0.08706997333335005, 0.06090029217752806, -0.09159925656170256, 0.9939319552179611). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_011_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_011.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9988319894217771, 0.03272360160321413, -0.035550290175716454, -0.026996464011189544, 0.9881526407178151, 0.15108125921079513, 0.040073031313187575, -0.1499450717446985, 0.9878818907054137). 
+Direction seg: (0.9988319373525488, 0.03272532613918282, -0.03555015771049861, -0.026998190816444636, 0.9881525919649212, 0.15108129228005884, 0.040073165799484584, -0.1499450166630822, 0.987881890414915). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_015_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_015.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9997697518609052, -0.02053778629864821, 0.006216320266038235, 0.017209056736111613, 0.9404698859322955, 0.3394410615916066, -0.012817629665317777, -0.33925594024047123, 0.9406067845108886). 
+Direction seg: (0.9997698282672448, -0.02053385972716947, 0.006217008211899743, 0.0172051286710712, 0.9404699705841627, 0.3394410319452772, -0.012816943235258647, -0.3392559432554266, 0.9406067906627182). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_016_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_016.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9983750239679126, -0.042040109612057786, -0.03847000421364318, 0.035016810907741384, 0.9851889032850288, -0.16785900360096126, 0.04495702916031613, 0.1662391470979338, 0.9850601066360848). 
+Direction seg: (0.9983749540615408, -0.0420418933908989, -0.03846986347492077, 0.03501859717869558, 0.9851888365489154, -0.16785903669040259, 0.04495719023974632, 0.16623909149024718, 0.9850601064938073). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_021_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_021.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9997963702532813, -0.01687933351181054, 0.011059205553094077, 0.01782245156998133, 0.9956352443567615, -0.09161235890528432, -0.009464578617116998, 0.09179078545719442, 0.9957333326088587). 
+Direction seg: (0.9997962967657721, -0.016883563165778884, 0.011059400089019577, 0.01782667639723753, 0.9956351684722137, -0.0916123422902918, -0.009464384928588315, 0.09179083067569375, 0.995733331976869). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_022_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_022.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9995691685583913, -0.020219306681068774, -0.02127573095122109, 0.020254261503157248, 0.999793840669434, 0.0014286685202220541, 0.021242461214465446, -0.0018589773530750555, 0.9997726252397345). 
+Direction seg: (0.9995691217172195, -0.020221617553959223, -0.021275735089302878, 0.02025657237605924, 0.9997937938867846, 0.0014286440298143077, 0.02124246184038456, -0.0018590021438751891, 0.9997726251866701). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_025_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_025.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9974110620469757, 0.07157532354821662, 0.006938752328117086, -0.07183753163328636, 0.9873877908786302, 0.14108408487190321, 0.003246899314838664, -0.14121729172727643, 0.9899732999995438). 
+Direction seg: (0.9974111385368076, 0.07157426464220872, 0.0069386764569907946, -0.0718364730688813, 0.9873878731675414, 0.14108407412799384, 0.0032468230215294165, -0.1412172530628119, 0.9899733020624708). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_027_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_027.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9995661888074402, -0.020937927322796694, 0.020713218538759473, 0.018664090980048214, 0.9943538787117878, 0.1044606009322396, -0.022783456736352993, -0.10402868397825865, 0.9943133034565318). 
+Direction seg: (0.9995660898787496, -0.02094290559510021, 0.02071296111893954, 0.018669069209830236, 0.9943537778800943, 0.10446066848259282, -0.022783718295003585, -0.10402864567425092, 0.9943133017222766). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_029_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_029.nii.gz
+
+Warning: Direction mismatch between segmentation and corresponding images. 
+Direction images: (0.9993582234880671, -0.029660257626447528, -0.020085079503166257, 0.02904041471353249, 0.9991134323606183, -0.030479560988973857, 0.020971300866676038, 0.02987671993571076, 0.9993335709077681). 
+Direction seg: (0.9993583198704139, -0.02965697696785697, -0.020085126915485974, 0.029037131954531996, 0.9991135285974951, -0.0304795305086151, 0.02097125350661381, 0.029876758368174744, 0.9993335708844986). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/imagesTr/topaneu_center5_mr_030_0000.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset303_TopAneuLocation/labelsTr/topaneu_center5_mr_030.nii.gz
+
+
+####################
+verify_dataset_integrity Done. 
+If you didn't see any error messages then your dataset is most likely OK!
+####################
+
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+Experiment planning...
+Attempting to find 3d_lowres config. 
+Current spacing: [0.51499733 0.39340232 0.39340232]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [212.62135922 433.00970874 357.2815534 ]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.53044725 0.40520439 0.40520439]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [206.4285041  420.39777547 346.87529456]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.54636067 0.41736052 0.41736052]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [200.4160234  408.15318007 336.77213064]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.56275149 0.42988134 0.42988134]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [194.57866349 396.26522337 326.96323363]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.57963403 0.44277778 0.44277778]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [188.91132378 384.72351784 317.44003265]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.59702305 0.45606111 0.45606111]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [183.40905221 373.51797848 308.19420646]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.61493374 0.46974294 0.46974294]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [178.06704098 362.63881406 299.21767617]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.63338176 0.48383523 0.48383523]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [172.88062231 352.0765185  290.50259823]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.65238321 0.49835029 0.49835029]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [167.84526438 341.82186263 282.0413575 ]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.67195471 0.5133008  0.5133008 ]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [162.95656736 331.86588604 273.82656068]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.69211335 0.52869982 0.52869982]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [158.21025958 322.19988936 265.85102979]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.71287675 0.54456082 0.54456082]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [153.60219376 312.81542657 258.10779591]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.73426305 0.56089764 0.56089764]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [149.12834346 303.70429764 250.59009312]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.75629094 0.57772457 0.57772457]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [144.78479947 294.8585414  243.29135254]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.77897967 0.59505631 0.59505631]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [140.56776648 286.27042854 236.20519664]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.80234906 0.612908   0.612908  ]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [136.47355969 277.93245489 229.32543363]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.82641953 0.63129524 0.63129524]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [132.49860164 269.83733485 222.64605207]
+Attempting to find 3d_lowres config. 
+Current spacing: [0.85121212 0.65023409 0.65023409]. 
+Current patch size: (np.int64(80), np.int64(192), np.int64(128)). 
+Current median shape: [128.63941907 261.977995   216.1612156 ]
+2D U-Net configuration:
+{'data_identifier': 'nnUNetPlans_2d', 'preprocessor_name': 'DefaultPreprocessor', 'batch_size': 17, 'patch_size': (np.int64(448), np.int64(384)), 'median_image_size_in_voxels': array([446., 368.]), 'spacing': array([0.381944, 0.381944]), 'normalization_schemes': ['ZScoreNormalization'], 'use_mask_for_norm': [False], 'resampling_fn_data': 'resample_data_or_seg_to_shape', 'resampling_fn_seg': 'resample_data_or_seg_to_shape', 'resampling_fn_data_kwargs': {'is_seg': False, 'order': 3, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_seg_kwargs': {'is_seg': True, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_probabilities': 'resample_data_or_seg_to_shape', 'resampling_fn_probabilities_kwargs': {'is_seg': False, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'architecture': {'network_class_name': 'dynamic_network_architectures.architectures.unet.ResidualEncoderUNet', 'arch_kwargs': {'n_stages': 7, 'features_per_stage': (32, 64, 128, 256, 512, 512, 512), 'conv_op': 'torch.nn.modules.conv.Conv2d', 'kernel_sizes': ((3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)), 'strides': ((1, 1), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)), 'n_blocks_per_stage': (1, 3, 4, 6, 6, 6, 6), 'n_conv_per_stage_decoder': (1, 1, 1, 1, 1, 1), 'conv_bias': True, 'norm_op': 'torch.nn.modules.instancenorm.InstanceNorm2d', 'norm_op_kwargs': {'eps': 1e-05, 'affine': True}, 'dropout_op': None, 'dropout_op_kwargs': None, 'nonlin': 'torch.nn.LeakyReLU', 'nonlin_kwargs': {'inplace': True}}, '_kw_requires_import': ('conv_op', 'norm_op', 'dropout_op', 'nonlin')}, 'batch_dice': True}
+
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+3D lowres U-Net configuration:
+{'data_identifier': 'nnUNetResEncUNetMPlans_3d_lowres', 'preprocessor_name': 'DefaultPreprocessor', 'batch_size': 2, 'patch_size': (np.int64(80), np.int64(192), np.int64(128)), 'median_image_size_in_voxels': (129, 262, 216), 'spacing': array([0.85121212, 0.65023409, 0.65023409]), 'normalization_schemes': ['ZScoreNormalization'], 'use_mask_for_norm': [False], 'resampling_fn_data': 'resample_data_or_seg_to_shape', 'resampling_fn_seg': 'resample_data_or_seg_to_shape', 'resampling_fn_data_kwargs': {'is_seg': False, 'order': 3, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_seg_kwargs': {'is_seg': True, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_probabilities': 'resample_data_or_seg_to_shape', 'resampling_fn_probabilities_kwargs': {'is_seg': False, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'architecture': {'network_class_name': 'dynamic_network_architectures.architectures.unet.ResidualEncoderUNet', 'arch_kwargs': {'n_stages': 6, 'features_per_stage': (32, 64, 128, 256, 320, 320), 'conv_op': 'torch.nn.modules.conv.Conv3d', 'kernel_sizes': ((3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)), 'strides': ((1, 1, 1), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)), 'n_blocks_per_stage': (1, 3, 4, 6, 6, 6), 'n_conv_per_stage_decoder': (1, 1, 1, 1, 1), 'conv_bias': True, 'norm_op': 'torch.nn.modules.instancenorm.InstanceNorm3d', 'norm_op_kwargs': {'eps': 1e-05, 'affine': True}, 'dropout_op': None, 'dropout_op_kwargs': None, 'nonlin': 'torch.nn.LeakyReLU', 'nonlin_kwargs': {'inplace': True}}, '_kw_requires_import': ('conv_op', 'norm_op', 'dropout_op', 'nonlin')}, 'batch_dice': False, 'next_stage': '3d_cascade_fullres'}
+
+3D fullres U-Net configuration:
+{'data_identifier': 'nnUNetPlans_3d_fullres', 'preprocessor_name': 'DefaultPreprocessor', 'batch_size': 2, 'patch_size': (np.int64(80), np.int64(192), np.int64(128)), 'median_image_size_in_voxels': array([219., 446., 368.]), 'spacing': array([0.49999741, 0.381944  , 0.381944  ]), 'normalization_schemes': ['ZScoreNormalization'], 'use_mask_for_norm': [False], 'resampling_fn_data': 'resample_data_or_seg_to_shape', 'resampling_fn_seg': 'resample_data_or_seg_to_shape', 'resampling_fn_data_kwargs': {'is_seg': False, 'order': 3, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_seg_kwargs': {'is_seg': True, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_probabilities': 'resample_data_or_seg_to_shape', 'resampling_fn_probabilities_kwargs': {'is_seg': False, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'architecture': {'network_class_name': 'dynamic_network_architectures.architectures.unet.ResidualEncoderUNet', 'arch_kwargs': {'n_stages': 6, 'features_per_stage': (32, 64, 128, 256, 320, 320), 'conv_op': 'torch.nn.modules.conv.Conv3d', 'kernel_sizes': ((3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)), 'strides': ((1, 1, 1), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)), 'n_blocks_per_stage': (1, 3, 4, 6, 6, 6), 'n_conv_per_stage_decoder': (1, 1, 1, 1, 1), 'conv_bias': True, 'norm_op': 'torch.nn.modules.instancenorm.InstanceNorm3d', 'norm_op_kwargs': {'eps': 1e-05, 'affine': True}, 'dropout_op': None, 'dropout_op_kwargs': None, 'nonlin': 'torch.nn.LeakyReLU', 'nonlin_kwargs': {'inplace': True}}, '_kw_requires_import': ('conv_op', 'norm_op', 'dropout_op', 'nonlin')}, 'batch_dice': True}
+
+Plans were saved to /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed/Dataset303_TopAneuLocation/nnUNetResEncUNetMPlans.json
+Preprocessing...
+Preprocessing dataset Dataset303_TopAneuLocation
+Configuration: 3d_fullres...
+==============================================
+Applying custom patch plans to Dataset 303
+==============================================
+patched /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed/Dataset303_TopAneuLocation/nnUNetResEncUNetMPlans.json: spacing=[0.8, 0.45, 0.44] patch=[128, 256, 256]
+==============================================
+Preprocessing Dataset 303
+==============================================
+Preprocessing dataset Dataset303_TopAneuLocation
+Configuration: 3d_fullres...
+============================================================
+TopAneu Task 2 dataset build COMPLETE
+End: Sat Aug 29 16:50:18 EDT 2026
+============================================================

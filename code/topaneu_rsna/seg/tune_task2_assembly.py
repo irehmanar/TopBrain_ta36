@@ -4,11 +4,15 @@ Task 2 (52-class aneurysm-location) mask assembly + local metric tuning.
 Rather than the collapsed direct 52-class segmenter (Dataset303), this fuses
 two pieces of the pipeline that already work:
 
-  shape/position  <- binary aneurysm segmentation, Dataset304 (whole-head,
-                      ~64% Dice). Same native per-case grid as LOCATION_MASKS
-                      -- Dataset303/304 are built from the same symlinked
-                      images (prep/build_nnunet_datasets.py), so no ROI
-                      crop/back-projection is needed here.
+  shape/position  <- binary aneurysm segmentation. Dataset304 (whole-head,
+                      ~64% Dice) is the default, on the same native per-case
+                      grid as LOCATION_MASKS -- no crop/back-projection
+                      needed. --binary_dataset 305 (ROI-cropped + vessel
+                      channel) also works: its ground truth is reconstructed
+                      by re-cropping LOCATION_MASKS to the exact same box
+                      build_aneurysm_roi_dataset.py used (recomputed from
+                      Model 2's saved prediction, deterministic, since that
+                      crop offset was never itself written to disk).
   class label     <- the ROI classifier's per-case location probabilities,
                       aggregated out-of-fold (cls/train.py's oof.npz, one
                       fold per case -- honest, held-out, no leakage).
@@ -41,8 +45,17 @@ from scipy import ndimage
 from tqdm import tqdm
 
 from topaneu_rsna import config as C
+from topaneu_rsna.utils import geometry as geo
 from topaneu_rsna.utils import io as uio
 from topaneu_rsna.seg.evaluate_location import hd95
+
+# Datasets whose binary predictions live on the coarse-ROI-cropped grid
+# (job 05's 140mm cube, resampled to FINE_SPACING) rather than the whole-head
+# native grid LOCATION_MASKS uses. For these, the matching ground truth has
+# to be cropped to the exact same box -- recomputed deterministically from
+# Model 2's saved prediction, the same geometry build_aneurysm_roi_dataset.py
+# used, since that crop offset was never itself written to disk.
+CROPPED_DATASETS = {C.DS_ANEURYSM_ROI}
 
 
 def load_oof_probs(results_dir: Path) -> dict:
@@ -72,21 +85,47 @@ def load_binary_pred_paths(dataset_id: int, trainer: str, plans: str, folds) -> 
     return out
 
 
-def load_case(case: str, bin_path: Path, n_loc: int, probs: np.ndarray) -> dict:
+def cropped_ground_truth(case: str, ref_shape) -> tuple[np.ndarray, tuple]:
+    """The full 52-class location label, cropped to the exact same box
+    build_aneurysm_roi_dataset.py used for this case's binary prediction --
+    recomputed from Model 2's saved prediction (deterministic, same inputs)
+    rather than from a stored crop offset, since none was ever written out."""
+    img, _ = uio.read(C.COARSE_ROI_DIR / f"{case}{C.IMAGE_SUFFIX}")
+    v2, _ = uio.read(C.VESSEL_PRED_M2 / f"{case}.nii.gz")
+    v2 = geo.crop_pad(v2.astype(np.uint8), (0, 0, 0), img.shape)
+
+    lo, hi = geo.tight_bounds(v2, C.ROI_REFINE_MARGIN_MM, C.FINE_SPACING)
+    if lo is None:
+        lo, hi = np.zeros(3, int), np.asarray(img.shape, int)
+    lo, hi = geo.center_to_size(lo, hi, C.FINAL_ROI_SIZE)
+
+    loc_full, gmeta = uio.read(C.COARSE_ROI_DIR / f"{case}_location{C.LABEL_SUFFIX}")
+    gt = geo.crop_pad(loc_full.astype(np.uint8), lo, hi)
+    if gt.shape != tuple(ref_shape):
+        gt = geo.crop_pad(gt, (0, 0, 0), ref_shape)
+    return gt, gmeta["spacing"]
+
+
+def load_case(case: str, bin_path: Path, n_loc: int, probs: np.ndarray,
+             cropped: bool) -> dict:
     binmask, _ = uio.read(bin_path)
     binmask = binmask > 0
     lab, n = ndimage.label(binmask)
     sizes = ndimage.sum(binmask, lab, index=np.arange(1, n + 1)) if n else np.array([])
     order = np.argsort(-sizes) if n else np.array([], dtype=int)
 
-    gt, gmeta = uio.read(C.LOCATION_MASKS / f"{case}{C.LABEL_SUFFIX}")
+    if cropped:
+        gt, spacing = cropped_ground_truth(case, binmask.shape)
+    else:
+        gt, gmeta = uio.read(C.LOCATION_MASKS / f"{case}{C.LABEL_SUFFIX}")
+        spacing = gmeta["spacing"]
     gt_count = np.array([int((gt == c).sum()) for c in range(1, n_loc + 1)])
 
     top_loc = int(np.argmax(probs))
     top_p = float(probs[top_loc])
 
     return dict(lab=lab, sizes=sizes, order=order, gt=gt, gt_count=gt_count,
-               spacing=gmeta["spacing"], shape=binmask.shape,
+               spacing=spacing, shape=binmask.shape,
                top_loc=top_loc, top_p=top_p)
 
 
@@ -185,7 +224,12 @@ def main():
     if not cases:
         raise SystemExit("no overlapping cases -- check --cls_results_dir / --binary_dataset")
 
-    per_case = {c: load_case(c, bin_paths[c], n_loc, probs[c])
+    cropped = a.binary_dataset in CROPPED_DATASETS
+    if cropped:
+        print(f"Dataset{a.binary_dataset} is ROI-cropped -- reconstructing matching "
+             "ground-truth crops from COARSE_ROI_DIR/VESSEL_PRED_M2 per case")
+
+    per_case = {c: load_case(c, bin_paths[c], n_loc, probs[c], cropped)
                for c in tqdm(cases, desc="loading")}
 
     rows = []

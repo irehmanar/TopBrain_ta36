@@ -1,0 +1,549 @@
+============================================================
+TopAneu Task 2 (v3): build + plan + preprocess Dataset306_TopAneuAneurysmVesselness
+Binary aneurysm/background, whole-head, same target as Dataset304, but with
+a vesselness map as input channel 1. Reuses the already-computed vesselness
+from 01_rsna_pipeline/Dataset104_TopAneuLocationVesselness for every case it
+covers (no 3-day Frangi re-run); only falls back to jobs/18's output for cases
+missing from Dataset104, so job 18 is NOT a hard prerequisite for this job.
+Job ID:       2176740
+Node:         nc10342
+Start:        Mon Aug 31 18:05:15 EDT 2026
+============================================================
+==============================================
+TopAneu RSNA Pipeline Environment
+==============================================
+TOPANEU_ROOT        = /home/abdul7/projects/def-punithak/abdul7/TopAneu
+EXP_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+CODE_ROOT           = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/code
+TOPANEU_DATA        = /home/abdul7/projects/def-punithak/abdul7/TopAneu/data
+
+SCRATCH_ROOT        = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+nnUNet_raw          = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw
+nnUNet_preprocessed = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_preprocessed
+nnUNet_results      = /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_results
+LOG_ROOT            = /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs
+
+Python:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/python
+
+nnUNet:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/venv/bin/nnUNetv2_train
+
+Scratch:
+Filesystem                                   Size  Used Avail Use% Mounted on
+10.82.48.7@o2ib1:10.82.48.8@o2ib1:/lustre07   19T  494G   19T   3% /scratch
+==============================================
+==============================================
+Building Dataset 306 (location_masks collapsed to binary + vesselness channel -> nnU-Net raw)
+==============================================
+/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness  (417 cases: 417 from Dataset104 (resampled), 0 freshly computed, 2 input channels, 1 foreground class)
+==============================================
+Planning Dataset 306
+==============================================
+Fingerprint extraction...
+Dataset306_TopAneuAneurysmVesselness
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (196, 454, 354). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_148_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_148_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_148.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.500012993812561), np.float64(0.390625), np.float64(0.3906250298023224)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_148_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_148_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_148.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (248, 433, 383). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_149_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_149_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_149.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.45006051659584045), np.float64(0.3819439709186554), np.float64(0.3819440007209778)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_149_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_149_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_149.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (145, 707, 550). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_150_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_150_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_150.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.7000970244407654), np.float64(0.251116007566452), np.float64(0.251116007566452)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_150_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_150_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_150.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (240, 430, 348). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_157_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_157_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_157.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.44997790455818176), np.float64(0.3819440007209778), np.float64(0.3819440007209778)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_157_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_157_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_157.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (229, 461, 356). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_173_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_173_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_173.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.4499863088130951), np.float64(0.3819440007209778), np.float64(0.38194403052330017)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_173_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_173_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_173.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (160, 721, 610). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_177_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_177_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_177.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.6999993920326233), np.float64(0.234375), np.float64(0.2343750149011612)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_177_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_177_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_177.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (243, 465, 362). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_178_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_178_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_178.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.4500397741794586), np.float64(0.3819440007209778), np.float64(0.3819440007209778)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_178_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_178_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_178.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (160, 733, 622). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_184_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_184_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_184.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.6999966502189636), np.float64(0.234375), np.float64(0.234375)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_184_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_184_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_184.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (223, 434, 367). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_188_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_188_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_188.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.44975563883781433), np.float64(0.3819439709186554), np.float64(0.38194403052330017)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_188_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_188_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_188.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (193, 740, 649). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_189_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_189_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_189.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.499994695186615), np.float64(0.2343749850988388), np.float64(0.2343750149011612)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_189_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_189_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_189.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (184, 698, 576). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_191_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_191_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_191.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.49999794363975525), np.float64(0.2455357164144516), np.float64(0.2455357164144516)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_191_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_191_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_191.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (204, 355, 321). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_193_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_193_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_193.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.4700010418891907), np.float64(0.4365079700946808), np.float64(0.43650802969932556)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_193_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_193_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_193.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (219, 445, 379). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_195_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_195_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_195.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.45004987716674805), np.float64(0.3819440007209778), np.float64(0.3819439709186554)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_195_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_195_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_195.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (248, 414, 368). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_198_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_198_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_198.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.44997167587280273), np.float64(0.3819439709186554), np.float64(0.3819440007209778)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_198_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_198_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_198.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (229, 500, 368). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_819_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_819_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_819.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.44999051094055176), np.float64(0.38194403052330017), np.float64(0.38194403052330017)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_819_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_819_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_819.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (248, 449, 394). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_823_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_823_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_823.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.45000001788139343), np.float64(0.3819440007209778), np.float64(0.38194403052330017)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_823_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_823_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_823.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (248, 461, 367). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_840_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_840_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_840.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.45004981756210327), np.float64(0.3819439709186554), np.float64(0.3819440007209778)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_840_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_840_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_840.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (213, 465, 364). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_842_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_842_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_842.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.44994163513183594), np.float64(0.3819440007209778), np.float64(0.38194403052330017)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_842_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_842_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_842.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (192, 708, 570). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_848_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_848_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_848.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.5000003576278687), np.float64(0.234375), np.float64(0.234375)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_848_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_848_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_848.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (248, 453, 380). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_850_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_850_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_850.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.4498846232891083), np.float64(0.3819440007209778), np.float64(0.3819440007209778)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_850_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_850_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_850.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (288, 759, 624). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_871_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_871_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_871.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.4999811351299286), np.float64(0.2343749850988388), np.float64(0.2343750149011612)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_871_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_871_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_871.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (154, 737, 564). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_877_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_877_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_877.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.7000000476837158), np.float64(0.2511160373687744), np.float64(0.2511160671710968)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_877_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_877_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_877.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (290, 449, 380). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_891_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_891_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_891.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.45001497864723206), np.float64(0.3819439709186554), np.float64(0.3819439709186554)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_891_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_891_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_891.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (229, 457, 372). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_892_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_892_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_892.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.4499237835407257), np.float64(0.3819440007209778), np.float64(0.38194403052330017)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_892_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_892_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_892.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (224, 650, 564). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_895_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_895_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_895.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.5000013709068298), np.float64(0.234375), np.float64(0.234375)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_895_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_895_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_895.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (213, 473, 384). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_896_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_896_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_896.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.44978493452072144), np.float64(0.3819440007209778), np.float64(0.3819440007209778)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_896_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_896_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_896.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (240, 493, 376). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_902_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_902_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_902.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.44997334480285645), np.float64(0.3819439709186554), np.float64(0.3819440007209778)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_902_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_902_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_902.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (223, 418, 372). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_909_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_909_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_909.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.4499375522136688), np.float64(0.3819440007209778), np.float64(0.3819440007209778)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_909_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center1_mr_909_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center1_mr_909.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (604, 385, 322). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_070_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_070_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_070.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.2499936819076538), np.float64(0.42899999022483826), np.float64(0.42899999022483826)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_070_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_070_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_070.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (580, 372, 313). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_072_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_072_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_072.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.25), np.float64(0.4300000071525574), np.float64(0.4300000071525574)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_072_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_072_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_072.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (585, 396, 323). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_074_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_074_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_074.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.2500148415565491), np.float64(0.4300000071525574), np.float64(0.4300000071525574)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_074_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_074_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_074.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (548, 434, 359). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_083_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_083_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_083.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.25), np.float64(0.38999998569488525), np.float64(0.38999998569488525)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_083_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_083_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_083.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (274, 372, 327). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_087_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_087_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_087.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.5), np.float64(0.4300000071525574), np.float64(0.4300000071525574)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_087_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_087_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_087.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (274, 369, 355). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_093_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_093_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_093.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.5), np.float64(0.4300000071525574), np.float64(0.4300000071525574)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_093_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_093_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_093.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (568, 400, 343). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_094_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_094_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_094.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.25), np.float64(0.38999998569488525), np.float64(0.38999998569488525)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_094_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_094_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_094.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (556, 368, 296). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_097_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_097_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_097.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.25), np.float64(0.4300000071525574), np.float64(0.4300000071525574)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_097_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_097_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_097.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (598, 407, 374). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_101_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_101_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_101.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.2499987632036209), np.float64(0.39000001549720764), np.float64(0.38999998569488525)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_101_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_101_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_101.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (626, 403, 352). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_102_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_102_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_102.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.2500196099281311), np.float64(0.4300000071525574), np.float64(0.4300000071525574)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_102_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_102_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_102.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (610, 428, 327). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_103_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_103_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_103.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.24997691810131073), np.float64(0.43000003695487976), np.float64(0.4300000071525574)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_103_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_103_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_103.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (598, 423, 351). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_104_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_104_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_104.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.24997705221176147), np.float64(0.39000001549720764), np.float64(0.38999998569488525)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_104_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_104_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_104.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (610, 413, 319). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_105_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_105_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_105.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.2499987632036209), np.float64(0.42900002002716064), np.float64(0.42899999022483826)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_105_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_105_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_105.nii.gz
+
+Error: Shape mismatch between segmentation and corresponding images. 
+Shape images: (128, 256, 256). 
+Shape seg: (615, 403, 324). 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_106_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_106_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_106.nii.gz
+
+Error: Spacing mismatch between segmentation and corresponding images. 
+Spacing images: [np.float64(0.800000011920929), np.float64(0.44999998807907104), np.float64(0.4399999976158142)]. 
+Spacing seg: [np.float64(0.2500196099281311), np.float64(0.4300000071525574), np.float64(0.4300000071525574)]. 
+Image files: ['/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_106_0000.nii.gz', '/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/imagesTr/topaneu_center4_ct_106_0001.nii.gz']. 
+Seg file: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw/Dataset306_TopAneuAneurysmVesselness/labelsTr/topaneu_center4_ct_106.nii.gz
+

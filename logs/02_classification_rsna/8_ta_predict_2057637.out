@@ -1,3 +1,9 @@
+============================================================
+TopAneu prediction
+Job ID:       2057637
+Node:         ng30710
+Start:        Sun Aug 30 09:38:27 EDT 2026
+============================================================
 ==============================================
 TopAneu RSNA Pipeline Environment
 ==============================================
@@ -20,37 +26,17 @@ nnUNet:
 
 Scratch:
 Filesystem                                   Size  Used Avail Use% Mounted on
-10.82.48.7@o2ib1:10.82.48.8@o2ib1:/lustre07   19T  236G   19T   2% /scratch
+10.82.48.7@o2ib1:10.82.48.8@o2ib1:/lustre07   19T  440G   19T   3% /scratch
 ==============================================
-======================================================
-TopAneu Model 1 Training
-======================================================
-Job ID : 1767605
-Node   : ng10503
-Start  : Wed Aug 26 13:46:40 EDT 2026
-======================================================
-
-Training configuration:
-  Dataset      : Dataset301
-  Configuration: 3d_fullres
-  Fold         : all
-  Plans        : nnUNetResEncUNetMPlans
-  Trainer      : RSNA2025Trainer_moreDAv7
-  Code root    : /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/code
-  nnUNet raw   : /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_raw
-  Results      : /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/nnUNet_results
-
-======================================================
-Dataset verification
-======================================================
-Images : 417
-Labels : 417
-Dataset verification passed.
-
-======================================================
-GPU
-======================================================
-Wed Aug 26 13:46:40 2026       
+CODE_ROOT:    /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/code
+SCRATCH_ROOT: /scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline
+LOG_ROOT:     /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs
+CPUs:         8
+Memory:       131072 MB
+============================================================
+GPU information
+============================================================
+Sun Aug 30 09:38:29 2026       
 +-----------------------------------------------------------------------------------------+
 | NVIDIA-SMI 580.159.04             Driver Version: 580.159.04     CUDA Version: 13.0     |
 +-----------------------------------------+------------------------+----------------------+
@@ -59,7 +45,7 @@ Wed Aug 26 13:46:40 2026
 |                                         |                        |               MIG M. |
 |=========================================+========================+======================|
 |   0  NVIDIA A100-SXM4-40GB          Off |   00000000:41:00.0 Off |                    0 |
-| N/A   28C    P0             53W /  400W |       0MiB /  40960MiB |      0%      Default |
+| N/A   29C    P0             53W /  400W |       0MiB /  40960MiB |      0%      Default |
 |                                         |                        |             Disabled |
 +-----------------------------------------+------------------------+----------------------+
 
@@ -70,15 +56,21 @@ Wed Aug 26 13:46:40 2026
 |=========================================================================================|
 |  No running processes found                                                             |
 +-----------------------------------------------------------------------------------------+
-
-======================================================
-STARTING MODEL 1 TRAINING
-======================================================
-Using device: cuda:0
-
-#######################################################################
-Please cite the following paper when using nnU-Net:
-Isensee, F., Jaeger, P. F., Kohl, S. A., Petersen, J., & Maier-Hein, K. H. (2021). nnU-Net: a self-configuring method for deep learning-based biomedical image segmentation. Nature methods, 18(2), 203-211.
-#######################################################################
-
-2026-08-26 13:48:19.972908: do_dummy_2d_data_aug: False
+============================================================
+Preparing prediction cache
+============================================================
+Cache directory:
+/scratch/abdul7/TopAneu/experiments/02_rsna_self_pipeline/work/cls_cache
+Prediction output:
+/home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs/predictions.csv
+============================================================
+Running classifier prediction
+============================================================
+using folds: fold_1(0.9411), fold_2(0.9375), fold_4(0.9301), fold_3(0.9149)
+wrote /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs/predictions.csv
+============================================================
+TopAneu prediction COMPLETE
+End: Sun Aug 30 09:56:31 EDT 2026
+============================================================
+Prediction file:
+-rw-r-----. 1 abdul7 def-punithak 206K Aug 30 09:56 /home/abdul7/projects/def-punithak/abdul7/TopAneu/experiments/02_rsna_self_pipeline/logs/predictions.csv
