@@ -21,6 +21,13 @@ def main():
     ap.add_argument("--configuration", default="3d_fullres")
     ap.add_argument("--spacing", type=float, nargs=3, default=None, help="z y x")
     ap.add_argument("--patch", type=int, nargs=3, default=None, help="z y x")
+    ap.add_argument("--batch_size", type=int, default=None,
+                    help="nnU-Net's auto-planner sizes this for whatever patch/class "
+                         "count IT picked -- forcing --spacing/--patch afterward "
+                         "doesn't reconsider it, so a class-heavy dataset (e.g. the "
+                         "52-class location datasets) forced onto a patch planned "
+                         "for a binary target can OOM at training time. Only affects "
+                         "the dataloader, not preprocessed data -- no rebuild needed.")
     a = ap.parse_args()
 
     ds_dir = next(C.nnUNet_preprocessed.glob(f"Dataset{a.dataset:03d}_*"))
@@ -31,8 +38,11 @@ def main():
         cfg["spacing"] = list(a.spacing)
     if a.patch:
         cfg["patch_size"] = list(a.patch)
+    if a.batch_size:
+        cfg["batch_size"] = a.batch_size
     p.write_text(json.dumps(plans, indent=2))
-    print(f"patched {p}: spacing={cfg['spacing']} patch={cfg['patch_size']}")
+    print(f"patched {p}: spacing={cfg['spacing']} patch={cfg['patch_size']} "
+         f"batch_size={cfg['batch_size']}")
 
 
 if __name__ == "__main__":
