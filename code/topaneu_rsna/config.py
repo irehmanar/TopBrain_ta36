@@ -38,6 +38,13 @@ VESSEL_PRED_M3  = WORK / "vessel_pred_m3"
 CLS_CACHE_DIR   = WORK / "cls_cache"
 CLS_RESULTS_DIR = SCRATCH_ROOT / "cls_results"
 VESSELNESS_DIR  = WORK / "vesselness"    # prep/compute_vesselness.py output, one <case>.nii.gz per case
+# [TOPANEU] dedicated coarse-to-fine cascade for aneurysm segmentation itself (see
+# DS_ANEURYSM_COARSE below) -- mirrors COARSE_PRED_DIR/COARSE_ROI_DIR/VESSEL_PRED_M2
+# above, but driven by a coarse *aneurysm* localizer instead of Model 1's vessel-group
+# one, so it gets its own working directories rather than overloading those.
+ANEURYSM_COARSE_PRED_DIR = WORK / "aneurysm_coarse_pred"
+ANEURYSM_COARSE_ROI_DIR  = WORK / "aneurysm_coarse_roi"
+ANEURYSM_VESSEL_PRED_M2  = WORK / "aneurysm_vessel_pred_m2"
 # [TOPANEU] vesselness maps already computed (3-day Frangi run) for the unrelated
 # 01_rsna_pipeline/Dataset104_TopAneuLocationVesselness experiment, as
 # imagesTr/<case>_0001.nii.gz next to the original imagesTr/<case>_0000.nii.gz --
@@ -125,12 +132,36 @@ DS_ANEURYSM_VESSELNESS = 306   # Dataset306_TopAneuAneurysmVesselness (Task 2, b
 # still worth pairing with class-balanced sampling if it doesn't fully resolve it.
 DS_LOCATION_M1COND = 307   # Dataset307_TopAneuLocationM1Cond (Task 2, 52-class, +Model1 channel)
 DS_LOCATION_M2COND = 308   # Dataset308_TopAneuLocationM2Cond (Task 2, 52-class, +Model2 channel, ROI)
+# [TOPANEU] a dedicated coarse-to-fine cascade for aneurysm segmentation, mirroring the
+# vessel Model1->Model2/3 pattern -- but built fresh for this task rather than reusing
+# the vessel models' own localization (DS_ANEURYSM/304's and DS_ANEURYSM_ROI/305's
+# ROI came from Model 1/2's vessel predictions, not a model that ever looked for
+# aneurysms specifically at low resolution first).
+#   DS_ANEURYSM_COARSE -- whole-head, ForcedLowres (1mm iso, 128^3 patch -- same
+#     recipe as Model 1/DS_COARSE), binary aneurysm/background target. Its own
+#     prediction (not ground truth) drives the crop for both fine variants below,
+#     via seg/aneurysm_coarse_roi.py -- same self-consistent train/inference logic
+#     as seg/coarse_roi.py. Whether that crop actually contains the true aneurysm is
+#     checked separately and after the fact by seg/check_aneurysm_crop_coverage.py
+#     (a CPU-only audit job) -- it doesn't feed back into the crop itself.
+#   DS_ANEURYSM_FINE_RAW -- fine stage, cropped to that ROI, single channel (image
+#     only). "Experiment A."
+#   DS_ANEURYSM_FINE_VESSEL -- same crop, ch0=image, ch1=Model 2's vessel prediction
+#     computed fresh on this new crop (ANEURYSM_VESSEL_PRED_M2 -- Model 2 was never
+#     run whole-head or on this crop before, only on the older vessel-based one).
+#     "Experiment B."
+DS_ANEURYSM_COARSE      = 309   # Dataset309_TopAneuAneurysmCoarse
+DS_ANEURYSM_FINE_RAW    = 310   # Dataset310_TopAneuAneurysmFineRaw
+DS_ANEURYSM_FINE_VESSEL = 311   # Dataset311_TopAneuAneurysmFineVessel
 DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm",
            DS_ANEURYSM_ROI: "TopAneuAneurysmROI",
            DS_ANEURYSM_VESSELNESS: "TopAneuAneurysmVesselness",
            DS_LOCATION_M1COND: "TopAneuLocationM1Cond",
-           DS_LOCATION_M2COND: "TopAneuLocationM2Cond"}
+           DS_LOCATION_M2COND: "TopAneuLocationM2Cond",
+           DS_ANEURYSM_COARSE: "TopAneuAneurysmCoarse",
+           DS_ANEURYSM_FINE_RAW: "TopAneuAneurysmFineRaw",
+           DS_ANEURYSM_FINE_VESSEL: "TopAneuAneurysmFineVessel"}
 
 PLANS_RESENC = "nnUNetResEncUNetMPlans"
 # trainers bundled in the author's nnUNet fork

@@ -13,6 +13,11 @@ Create the nnU-Net datasets on scratch.
                      [TOPANEU] Task 2 target -- same images/spacing as `location`,
                      labels are location_masks collapsed to a single foreground class
                      (per-location assignment happens downstream via the classifier).
+  --stage aneurysm_coarse : Dataset309_TopAneuAneurysmCoarse, same binary target as
+                     `aneurysm` (identical imagesTr/labelsTr content), but planned
+                     separately with the ForcedLowres planner (1mm iso, 128^3 patch --
+                     see jobs) as the coarse stage of a dedicated aneurysm coarse-to-
+                     fine cascade (see config.py DS_ANEURYSM_COARSE).
 
 All read from $TOPANEU_DATA, which is never modified.
 """
@@ -51,10 +56,11 @@ def _link_or_copy(src: Path, dst: Path):
 
 
 DS_ID = {"coarse": C.DS_COARSE, "vessel": C.DS_VESSEL, "location": C.DS_LOCATION,
-        "aneurysm": C.DS_ANEURYSM}
-# stage -> source mask dir (coarse/aneurysm derive their labels, so aren't symlinked)
+        "aneurysm": C.DS_ANEURYSM, "aneurysm_coarse": C.DS_ANEURYSM_COARSE}
+# stage -> source mask dir (coarse/aneurysm* derive their labels, so aren't symlinked)
 SOURCE_DIR = {"vessel": C.VESSEL_MASKS, "location": C.LOCATION_MASKS,
-             "coarse": C.VESSEL_MASKS, "aneurysm": C.LOCATION_MASKS}
+             "coarse": C.VESSEL_MASKS, "aneurysm": C.LOCATION_MASKS,
+             "aneurysm_coarse": C.LOCATION_MASKS}
 
 
 def build(stage: str, limit: int | None):
@@ -89,7 +95,7 @@ def build(stage: str, limit: int | None):
             lab, meta = uio.read(sp)
             grp = v_to_group[np.clip(lab.astype(np.int64), 0, spec.n_vessel)]
             uio.write(grp.astype(np.uint8), meta, root / "labelsTr" / f"{case}.nii.gz")
-        elif stage == "aneurysm":
+        elif stage in ("aneurysm", "aneurysm_coarse"):
             lab, meta = uio.read(sp)
             uio.write((lab > 0).astype(np.uint8), meta, root / "labelsTr" / f"{case}.nii.gz")
         else:
@@ -102,7 +108,7 @@ def build(stage: str, limit: int | None):
     elif stage == "location":
         labels = {"background": 0}
         labels.update({loc: i + 1 for i, loc in enumerate(spec.locations)})
-    elif stage == "aneurysm":
+    elif stage in ("aneurysm", "aneurysm_coarse"):
         labels = {"background": 0, "aneurysm": 1}
     else:
         labels = {"background": 0, "posterior_basilar": 1, "mca": 2, "other": 3}
@@ -112,7 +118,8 @@ def build(stage: str, limit: int | None):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", choices=["coarse", "vessel", "location", "aneurysm"],
+    ap.add_argument("--stage",
+                    choices=["coarse", "vessel", "location", "aneurysm", "aneurysm_coarse"],
                     required=True)
     ap.add_argument("--limit", type=int, default=None)
     a = ap.parse_args()
