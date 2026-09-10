@@ -153,6 +153,18 @@ DS_LOCATION_M2COND = 308   # Dataset308_TopAneuLocationM2Cond (Task 2, 52-class,
 DS_ANEURYSM_COARSE      = 309   # Dataset309_TopAneuAneurysmCoarse
 DS_ANEURYSM_FINE_RAW    = 310   # Dataset310_TopAneuAneurysmFineRaw
 DS_ANEURYSM_FINE_VESSEL = 311   # Dataset311_TopAneuAneurysmFineVessel
+# [TOPANEU] third variant of the 52-class location-conditioning experiment
+# (see DS_LOCATION_M1COND/M2COND above), swapping the conditioning channel for
+# the dataset's own ground-truth vessel_masks (36 classes) instead of a real
+# model's prediction. This is an oracle/upper-bound run: no vessel inference
+# and no pretrained-weight expansion/warm-start needed (the thing that made
+# 307/308's own build+verify+train chain error-prone), so it isolates one
+# question -- does a *perfect* vessel channel let the 52-class head escape the
+# all-background collapse that random-init Dataset303 hit -- before spending
+# effort on 307/308's noisier, model-predicted channel. Whole-head, native
+# per-case grid, built by seg/build_location_conditioned_dataset.py
+# --source gt_vessel. See jobs/14_segmentation_gtvessel_52class.
+DS_LOCATION_GTVESSEL    = 312   # Dataset312_TopAneuLocationGTVessel
 DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm",
            DS_ANEURYSM_ROI: "TopAneuAneurysmROI",
@@ -161,7 +173,8 @@ DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION_M2COND: "TopAneuLocationM2Cond",
            DS_ANEURYSM_COARSE: "TopAneuAneurysmCoarse",
            DS_ANEURYSM_FINE_RAW: "TopAneuAneurysmFineRaw",
-           DS_ANEURYSM_FINE_VESSEL: "TopAneuAneurysmFineVessel"}
+           DS_ANEURYSM_FINE_VESSEL: "TopAneuAneurysmFineVessel",
+           DS_LOCATION_GTVESSEL: "TopAneuLocationGTVessel"}
 
 PLANS_RESENC = "nnUNetResEncUNetMPlans"
 # trainers bundled in the author's nnUNet fork

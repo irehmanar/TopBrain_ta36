@@ -391,3 +391,27 @@ class RSNA2025Trainer_moreDAv6_SkeletonRecallW5(RSNA2025Trainer_moreDAv6_Skeleto
     ):
         super().__init__(plans, configuration, fold, dataset_json, device)
         self.weight_srec = 5
+
+
+class RSNA2025Trainer_moreDAv6_1_SkeletonRecallTverskyBeta07_ep250(
+    RSNA2025Trainer_moreDAv6_1_SkeletonRecallTverskyBeta07
+):
+    """[TOPANEU] same loss/augmentation as the parent -- inherited num_epochs=1000
+    (the parent chain never overrides nnUNetTrainer's default), shortened to 250
+    for a quicker diagnostic run. save_every lowered to match, so a resumable
+    checkpoint exists well before the run ends (parent's default of 50 meant no
+    checkpoint had been saved yet when Dataset312's job 40 crashed in epoch 1).
+    Same pattern as nnUNetTrainerSkeletonRecall_more_DAv3_ep800 in this package.
+    """
+
+    def __init__(
+        self,
+        plans: dict,
+        configuration: str,
+        fold: int,
+        dataset_json: dict,
+        device: torch.device = torch.device("cuda"),
+    ):
+        super().__init__(plans, configuration, fold, dataset_json, device)
+        self.num_epochs = 250
+        self.save_every = 10

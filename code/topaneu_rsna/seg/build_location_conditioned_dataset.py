@@ -30,6 +30,18 @@ new segmentation inference needed either way:
                     label = COARSE_ROI_DIR/<case>_location.nii.gz (job 05's
                           matching cropped location mask)
 
+  --source gt_vessel  Dataset312, whole-head, native per-case grid (same
+                    layout as --source model1, but no model inference or
+                    pretrained-weight warm-start involved).
+                    ch0 = raw image (IMAGES_DIR)
+                    ch1 = VESSEL_MASKS ground truth (36 vessel classes) --
+                          stands in for a vessel model's prediction so this
+                          run measures the oracle/upper-bound case: does a
+                          *perfect* vessel channel let the 52-class head
+                          escape Dataset303's all-background collapse.
+                    label = LOCATION_MASKS (whole-head, 52 classes)
+                    No pretrained_checkpoint() -- trains from random init.
+
 Note this doesn't by itself fix Dataset303's diagnosed root cause (most
 training patches contain at most one of 52 classes -- too sparse for the
 loss to escape predicting all-background); channel-conditioning and warm-
@@ -38,6 +50,7 @@ collapse persists, pair this with class-balanced case sampling next.
 
     python -m topaneu_rsna.seg.build_location_conditioned_dataset --source model1
     python -m topaneu_rsna.seg.build_location_conditioned_dataset --source model2
+    python -m topaneu_rsna.seg.build_location_conditioned_dataset --source gt_vessel
 
 Then train with, e.g.:
     nnUNetv2_train 307 3d_fullres all -p nnUNetResEncUNetMPlans \\
@@ -56,13 +69,16 @@ from topaneu_rsna import config as C
 from topaneu_rsna.utils import geometry as geo
 from topaneu_rsna.utils import io as uio
 
-DS_ID = {"model1": C.DS_LOCATION_M1COND, "model2": C.DS_LOCATION_M2COND}
+DS_ID = {"model1": C.DS_LOCATION_M1COND, "model2": C.DS_LOCATION_M2COND,
+        "gt_vessel": C.DS_LOCATION_GTVESSEL}
 
 
-def pretrained_checkpoint(source: str) -> Path:
+def pretrained_checkpoint(source: str) -> Path | None:
     if source == "model1":
         return C.seg_model_dir(C.DS_COARSE, C.TRAINER_M1) / "fold_all" / "checkpoint_final.pth"
-    return C.seg_model_dir(C.DS_VESSEL, C.TRAINER_M2) / "fold_all" / "checkpoint_final.pth"
+    if source == "model2":
+        return C.seg_model_dir(C.DS_VESSEL, C.TRAINER_M2) / "fold_all" / "checkpoint_final.pth"
+    return None   # gt_vessel: no warm start, trains from random init
 
 
 def _root(ds_id: int) -> Path:
@@ -118,9 +134,33 @@ def build_model2(root: Path, limit: int | None):
     return n
 
 
+def build_gt_vessel(root: Path, limit: int | None):
+    cases = uio.list_cases(C.IMAGES_DIR, C.IMAGE_SUFFIX)
+    if limit:
+        cases = cases[:limit]
+    n = 0
+    for case in tqdm(cases, desc="gt-vessel-conditioned"):
+        img_p = C.IMAGES_DIR / f"{case}{C.IMAGE_SUFFIX}"
+        cond_p = C.VESSEL_MASKS / f"{case}{C.LABEL_SUFFIX}"
+        lab_p = C.LOCATION_MASKS / f"{case}{C.LABEL_SUFFIX}"
+        if not (img_p.exists() and cond_p.exists() and lab_p.exists()):
+            continue
+
+        img, meta = uio.read(img_p)
+        cond, _ = uio.read(cond_p)
+        cond = geo.crop_pad(cond.astype(np.uint8), (0, 0, 0), img.shape)
+        lab, _ = uio.read(lab_p)
+
+        uio.write(img.astype(np.float32), meta, root / "imagesTr" / f"{case}_0000.nii.gz")
+        uio.write(cond.astype(np.float32), meta, root / "imagesTr" / f"{case}_0001.nii.gz")
+        uio.write(lab.astype(np.uint8), meta, root / "labelsTr" / f"{case}.nii.gz")
+        n += 1
+    return n
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--source", choices=["model1", "model2"], required=True)
+    ap.add_argument("--source", choices=["model1", "model2", "gt_vessel"], required=True)
     ap.add_argument("--limit", type=int, default=None)
     a = ap.parse_args()
 
@@ -130,12 +170,18 @@ def main():
     (root / "imagesTr").mkdir(parents=True, exist_ok=True)
     (root / "labelsTr").mkdir(parents=True, exist_ok=True)
 
-    n = build_model1(root, a.limit) if a.source == "model1" else build_model2(root, a.limit)
+    if a.source == "model1":
+        n = build_model1(root, a.limit)
+    elif a.source == "model2":
+        n = build_model2(root, a.limit)
+    else:
+        n = build_gt_vessel(root, a.limit)
 
     labels = {"background": 0}
     labels.update({loc: i + 1 for i, loc in enumerate(spec.locations)})
+    channel1_name = "ground_truth_vessel" if a.source == "gt_vessel" else f"{a.source}_prediction"
     (root / "dataset.json").write_text(json.dumps({
-        "channel_names": {"0": "CTA_MRA", "1": f"{a.source}_prediction"},
+        "channel_names": {"0": "CTA_MRA", "1": channel1_name},
         "labels": labels,
         "numTraining": int(n),
         "file_ending": ".nii.gz",
@@ -143,8 +189,11 @@ def main():
 
     ck = pretrained_checkpoint(a.source)
     print(f"{root}  ({n} cases, {len(labels) - 1} classes)")
-    print(f"pretrained checkpoint for -pretrained_weights: {ck}"
-         + ("" if ck.exists() else "  !! NOT FOUND YET"))
+    if ck is None:
+        print("no pretrained checkpoint for this source -- trains from random init")
+    else:
+        print(f"pretrained checkpoint for -pretrained_weights: {ck}"
+             + ("" if ck.exists() else "  !! NOT FOUND YET"))
 
 
 if __name__ == "__main__":
