@@ -8,7 +8,17 @@ from nnunetv2.training.nnUNetTrainer.project_specific.rsna2025.nnUNetTrainerSkel
     nnUNetTrainerSkeletonRecall_more_DAv3,
 )
 
-from src.models.schedulers.warmup_cosine_annealing import CosineAnnealingLR as WarmupCosineAnnealingLR
+try:
+    from src.models.schedulers.warmup_cosine_annealing import CosineAnnealingLR as WarmupCosineAnnealingLR
+except ModuleNotFoundError:
+    # [TOPANEU] 'src' is the original competition repo's own top-level package,
+    # never vendored into this port -- nothing in this pipeline instantiates the
+    # SwinUNETR trainer below, but nnU-Net's recursive_find_python_class imports
+    # every .py file in this folder while searching for *any* trainer class name
+    # (see find_class_by_name.py), so this unrelated ModuleNotFoundError could
+    # otherwise break lookup of unrelated trainers depending on filesystem
+    # directory-listing order. Only breaks if this file's own classes are used.
+    WarmupCosineAnnealingLR = None
 
 
 SWIN_DEFAULT_FEATURE_SIZE = 24
