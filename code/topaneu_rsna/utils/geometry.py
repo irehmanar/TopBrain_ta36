@@ -65,3 +65,61 @@ def component_centroids(labelmap, class_value, min_voxels=3):
         if len(pts) >= min_voxels:
             out.append(pts.mean(0))
     return out
+
+
+def nearest_vessel_label(instance_mask, vessel_map, spacing, tau_mm=4.0, pad_mm=20.0):
+    """Host-vessel lookup for one lesion instance against a multi-class vessel
+    label map, following the "distance to each other label" reasoning in the
+    TopAneu rule-based localisation paper: the vessel segmenter has no
+    aneurysm class, so the lesion itself is usually painted as vessel by
+    whichever label the sac sits in, making raw overlap unreliable -- what
+    stays reliable is which *other* labels are within a small margin.
+
+    Returns (vessel_label_id, distance_mm, touching) where vessel_label_id is
+    the nearest nonzero label in `vessel_map` (an int, or None if nothing is
+    within `tau_mm`), distance_mm is its distance from the instance (0.0 if
+    touching), and `touching` lists every label touching the instance at
+    zero distance (for later, more elaborate junction handling -- unused by
+    the simple first-pass caller, which only takes the single nearest one).
+    """
+    from scipy import ndimage
+
+    sp = np.asarray(spacing, np.float64)
+    idx = np.argwhere(instance_mask)
+    pad = np.ceil(pad_mm / sp).astype(int)
+    lo = np.maximum(idx.min(0) - pad, 0)
+    hi = np.minimum(idx.max(0) + pad + 1, instance_mask.shape)
+    sl = tuple(slice(a, b) for a, b in zip(lo, hi))
+    inst = instance_mask[sl]
+    ves = vessel_map[sl]
+
+    touch_zone = ndimage.binary_dilation(inst, iterations=2)
+    touching = sorted(int(v) for v in np.unique(ves[touch_zone & (ves > 0)]))
+    if touching:
+        # tie-break by contact-patch size (largest first)
+        counts = {v: int((ves[touch_zone] == v).sum()) for v in touching}
+        best = max(touching, key=lambda v: counts[v])
+        return best, 0.0, touching
+
+    labels_present = np.unique(ves[ves > 0])
+    if labels_present.size == 0:
+        return None, None, []
+
+    dt_inst = ndimage.distance_transform_edt(~inst, sampling=sp)
+    best_label, best_dist = None, np.inf
+    for v in labels_present:
+        d = float(dt_inst[ves == v].min())
+        if d < best_dist:
+            best_label, best_dist = int(v), d
+    if best_dist > tau_mm:
+        return None, best_dist, []
+    return best_label, best_dist, []
+
+
+def midline_side(point_zyx, spacing, shape) -> str:
+    """Coarse left/right call from array position alone, used only as a
+    fallback when a vessel name carries no R-/L- prefix to read laterality
+    off directly. `x` (last array axis) is assumed to increase toward one
+    side; callers that know the true anatomical/RAS convention for their
+    data should prefer that instead of this positional guess."""
+    return "R" if point_zyx[2] < shape[2] / 2.0 else "L"
