@@ -261,6 +261,26 @@ def run_training(
 
 
 def run_training_entry():
+    # [TOPANEU] Dataset312's training crashed within minutes on Rorqual's new venv
+    # with 'background workers are no longer alive' and no underlying Python
+    # traceback -- forcing nnUNet_n_proc_DA=0 (no background processes at all,
+    # SingleThreadedAugmenter) ran perfectly stably, which rules out the data,
+    # the augmentation code, and memory (confirmed via sacct, nowhere near the
+    # --mem request). What's left is multiprocessing itself: this trainer moves
+    # the network onto the GPU (CUDA context created) *before* spawning the
+    # background data-loading workers, and Linux's default 'fork' start method
+    # duplicates that live CUDA context into each child -- CUDA does not support
+    # this and a forked child touching CUDA state commonly segfaults instantly
+    # and silently, exactly matching the symptom. 'spawn' starts each worker as
+    # a fresh interpreter with no inherited CUDA state, avoiding this class of
+    # crash entirely. Must happen before any Process/Pool gets created -- this
+    # is the first line of the actual CLI entry point, well before that.
+    import multiprocessing
+    try:
+        multiprocessing.set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass
+
     import argparse
 
     parser = argparse.ArgumentParser()
