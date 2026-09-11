@@ -52,7 +52,8 @@ from batchgenerators.dataloading.nondet_multi_threaded_augmenter import NonDetMu
 from batchgenerators.dataloading.single_threaded_augmenter import SingleThreadedAugmenter
 from batchgenerators.utilities.file_and_folder_operations import join, load_pickle
 
-from nnunetv2.training.dataloading.data_loader import nnUNetDataLoader
+from nnunetv2.training.dataloading.data_loader_2d_skel import nnUNetDataLoader2DSkel
+from nnunetv2.training.dataloading.data_loader_3d_skel import nnUNetDataLoader3DSkel
 from nnunetv2.training.dataloading.nnunet_dataset import infer_dataset_class
 from nnunetv2.training.loss.deep_supervision import DeepSupervisionWrapper
 from nnunetv2.training.nnUNetTrainer.project_specific.rsna2025.focal_tversky_plusplus_loss import (
@@ -158,15 +159,21 @@ class RSNA2025Trainer_moreDAv6_1_ClassBalancedFocalTversky_ep250(RSNA2025Trainer
 
     def get_dataloaders(self):
         """
-        Copy of nnUNetTrainer.get_dataloaders() with exactly one change: the
-        training nnUNetDataLoader gets class-balanced sampling_probabilities
-        instead of None. There is no smaller extension point nnU-Net exposes
-        for this -- sampling_probabilities is only ever set at construction.
+        Copy of nnUNetTrainerSkeletonRecall.get_dataloaders() (NOT the plain
+        nnUNetTrainer base -- that version uses the generic nnUNetDataLoader,
+        which doesn't know about the "skel" key SkeletonRecall's train_step()
+        requires; only nnUNetDataLoader2DSkel/3DSkel's generate_train_batch()
+        actually pulls tmp["skel"] out of the transform pipeline's output).
+        The only change from that original: the training loader gets
+        class-balanced sampling_probabilities instead of None. There is no
+        smaller extension point nnU-Net exposes for this -- sampling_probabilities
+        is only ever set at construction.
         """
         if self.dataset_class is None:
             self.dataset_class = infer_dataset_class(self.preprocessed_dataset_folder)
 
         patch_size = self.configuration_manager.patch_size
+        dim = len(patch_size)
         deep_supervision_scales = self._get_deep_supervision_scales()
 
         (
@@ -193,21 +200,20 @@ class RSNA2025Trainer_moreDAv6_1_ClassBalancedFocalTversky_ep250(RSNA2025Trainer
 
         train_sampling_probabilities = self._class_balanced_case_weights(dataset_tr)
 
-        dl_tr = nnUNetDataLoader(dataset_tr, self.batch_size,
-                                 initial_patch_size,
-                                 self.configuration_manager.patch_size,
-                                 self.label_manager,
-                                 oversample_foreground_percent=self.oversample_foreground_percent,
-                                 sampling_probabilities=train_sampling_probabilities, pad_sides=None,
-                                 transforms=tr_transforms,
-                                 probabilistic_oversampling=self.probabilistic_oversampling)
-        dl_val = nnUNetDataLoader(dataset_val, self.batch_size,
-                                  self.configuration_manager.patch_size,
-                                  self.configuration_manager.patch_size,
-                                  self.label_manager,
-                                  oversample_foreground_percent=self.oversample_foreground_percent,
-                                  sampling_probabilities=None, pad_sides=None, transforms=val_transforms,
-                                  probabilistic_oversampling=self.probabilistic_oversampling)
+        loader_cls = nnUNetDataLoader2DSkel if dim == 2 else nnUNetDataLoader3DSkel
+        dl_tr = loader_cls(dataset_tr, self.batch_size,
+                           initial_patch_size,
+                           self.configuration_manager.patch_size,
+                           self.label_manager,
+                           oversample_foreground_percent=self.oversample_foreground_percent,
+                           sampling_probabilities=train_sampling_probabilities, pad_sides=None,
+                           transforms=tr_transforms)
+        dl_val = loader_cls(dataset_val, self.batch_size,
+                            self.configuration_manager.patch_size,
+                            self.configuration_manager.patch_size,
+                            self.label_manager,
+                            oversample_foreground_percent=self.oversample_foreground_percent,
+                            sampling_probabilities=None, pad_sides=None, transforms=val_transforms)
 
         allowed_num_processes = get_allowed_n_proc_DA()
         if allowed_num_processes == 0:
