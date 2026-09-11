@@ -17,6 +17,13 @@ num_epochs/save_every overrides, etc.) succeed before submitting the real job.
 
     python -m topaneu_rsna.seg.verify_trainer_lookup \\
         --dataset 312 --trainer RSNA2025Trainer_moreDAv6_1_SkeletonRecallTverskyBeta07_ep250
+
+Pass --also_test_dataloaders to additionally call trainer.get_dataloaders() and
+pull one real batch through it -- still CPU-only (no GPU needed for data
+loading), but exercises any custom get_dataloaders()/sampling logic a trainer
+overrides (e.g. class_balanced_focal.py's per-case class-balanced sampling,
+which reads every training case's .pkl off disk) before it ever gets to spend
+a GPU allocation finding out it has a bug.
 """
 from __future__ import annotations
 
@@ -32,6 +39,7 @@ def main():
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--configuration", default="3d_fullres")
     ap.add_argument("--fold", default="0")
+    ap.add_argument("--also_test_dataloaders", action="store_true")
     a = ap.parse_args()
 
     import torch
@@ -64,6 +72,23 @@ def main():
     print(f"num_input_ch:     {trainer.num_input_channels}")
     print(f"num_seg_heads:    {trainer.label_manager.num_segmentation_heads}")
     print(f"loss:             {type(trainer.loss).__name__}")
+
+    if a.also_test_dataloaders:
+        print("\nBuilding dataloaders (this reads every training case's .pkl "
+             "off disk if the trainer overrides sampling -- may take a bit)...")
+        try:
+            dl_tr, dl_val = trainer.get_dataloaders()
+            batch = next(dl_tr)
+            print(f"Train batch data shape:   {tuple(batch['data'].shape)}")
+            target = batch['target']
+            target_shape = tuple(target[0].shape) if isinstance(target, list) else tuple(target.shape)
+            print(f"Train batch target shape: {target_shape}"
+                 + (" (deep supervision -- showing highest-res head)" if isinstance(target, list) else ""))
+        except Exception:
+            print("\nFAIL -- get_dataloaders()/first batch raised an exception "
+                 "(see traceback above). Do not submit the GPU job yet.")
+            raise
+
     print("\nPASS -- trainer lookup and full CPU-side initialization succeeded.")
 
 
