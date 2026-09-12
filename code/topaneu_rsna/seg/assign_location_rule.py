@@ -96,7 +96,7 @@ def build_vessel_to_locations(spec) -> dict[str, list[str]]:
 
 def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
                 vessel_names: list, vessel_to_locations: dict, majority: dict,
-                tau_mm: float, min_voxels: int):
+                loc_value: dict, tau_mm: float, min_voxels: int):
     """Returns (final_mask uint16 of location ids, list of per-instance dicts)."""
     lab, n = ndimage.label(binmask)
     final = np.zeros(binmask.shape, dtype=np.uint16)
@@ -117,7 +117,7 @@ def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
                 assigned = locs[0] if len(locs) == 1 else majority.get(vessel_name, locs[0])
         instances.append(dict(size=size, vessel=vessel_name, dist=dist, assigned=assigned))
         if assigned is not None:
-            final[inst] = assigned
+            final[inst] = loc_value[assigned]
     return final, instances
 
 
@@ -230,7 +230,7 @@ def main():
 
         final, instances = assign_case(binmask, vessel_map, meta["spacing"],
                                        spec.vessels, vessel_to_locations, majority,
-                                       a.tau_mm, a.min_voxels)
+                                       loc_value, a.tau_mm, a.min_voxels)
         for inst in instances:
             inst["case"] = case
         all_instances.extend(instances)
