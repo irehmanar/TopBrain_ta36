@@ -293,7 +293,7 @@ def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
                         locs, prior, name_to_id, junction_tau_mm,
                         junction_override_mm, arc_ambiguous_margin)
 
-        rec = dict(size=size, vessel=vessel_name, dist=dist,
+        rec = dict(instance_idx=i, size=size, vessel=vessel_name, dist=dist,
                   assigned=assigned, resolved_by=resolved_by, extra_dist=extra_dist)
         if gt is not None:
             vals, counts = np.unique(gt[inst], return_counts=True)
@@ -466,11 +466,12 @@ def main():
         a.instances_csv.parent.mkdir(parents=True, exist_ok=True)
         with open(a.instances_csv, "w", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["case", "vessel", "size", "host_dist_mm", "resolved_by",
-                       "extra_dist_mm", "assigned", "true_class", "correct"])
+            w.writerow(["case", "instance_idx", "vessel", "size", "host_dist_mm",
+                       "resolved_by", "extra_dist_mm", "assigned", "true_class",
+                       "correct"])
             for r in all_instances:
-                w.writerow([r["case"], r["vessel"], r["size"], r["dist"],
-                           r["resolved_by"], r["extra_dist"], r["assigned"],
+                w.writerow([r["case"], r["instance_idx"], r["vessel"], r["size"],
+                           r["dist"], r["resolved_by"], r["extra_dist"], r["assigned"],
                            id_to_loc.get(r.get("true_class"), "background"),
                            r.get("correct")])
         print(f"  per-instance diagnostics written to {a.instances_csv}")
