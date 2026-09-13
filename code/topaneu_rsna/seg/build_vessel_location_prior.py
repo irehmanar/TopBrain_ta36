@@ -154,9 +154,9 @@ def main():
                      for e1, e2 in zip(entries, entries[1:])]
         out["arc"][v] = {"locations": entries, "boundaries": boundaries}
         if entries:
-            print(f"  {v:20s} arc-order -> "
-                 f"{[(e['location'], round(e['median_frac'], 3), e['n'],
-                     'LOW-SAMPLE' if e['low_sample'] else '') for e in entries]}")
+            summary = [(e["location"], round(e["median_frac"], 3), e["n"],
+                       "LOW-SAMPLE" if e["low_sample"] else "") for e in entries]
+            print(f"  {v:20s} arc-order -> {summary}")
         else:
             print(f"  {v:20s} arc-order -> no orientable instances, majority-only")
 
