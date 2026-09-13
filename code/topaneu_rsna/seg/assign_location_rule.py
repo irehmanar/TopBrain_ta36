@@ -25,15 +25,24 @@ For each connected component of the binary aneurysm prediction:
           junction/bifurcation/terminus-defined, measure the instance's
           distance to the voxel contact patch between the host vessel and
           that location's declared branch vessel; if any patch is within
-          tau, the closest one wins;
+          `--junction_tau_mm` (kept separate from `--tau_mm` above -- a
+          first pass reusing the same 4mm for both over-triggered badly on
+          BA and R/L-ICA-C6-C7, whose several branch take-offs sit close
+          together along a short stretch, stealing trunk/tip instances that
+          a tighter junction-only radius leaves alone), the closest one wins;
        b. otherwise, arc-fraction lookup (utils.vessel_skeleton): skeletonize
           this case's own copy of the host vessel, orient it via its
           declared proximal anchor, project the instance's centroid onto it,
           and look up which cohort-derived arc-fraction bucket
-          (vessel_location_prior.json's "arc" table) it falls into;
+          (vessel_location_prior.json's "arc" table) it falls into -- unless
+          that bucket's location is flagged "low_sample" (built from fewer
+          than build_vessel_location_prior.py's --min_arc_samples training
+          instances), in which case it falls through to (c) rather than
+          asserting a class off one or two noisy points;
        c. if the vessel's skeleton can't be oriented in this case (its
-          anchor vessel is missing/unsegmented) or has no arc-fraction
-          table at all, fall back to the flat cohort-majority location.
+          anchor vessel is missing/unsegmented), has no arc-fraction table
+          at all, or landed on a low-sample bucket, fall back to the flat
+          cohort-majority location.
   3. laterality falls out for free: vessel names are already lateralized
      (e.g. "L-PICA" vs "R-PICA"), so matching the correct-side vessel by
      geometry already gets the side right -- no separate midline fit.
@@ -113,10 +122,24 @@ def build_vessel_to_locations(spec) -> dict[str, list[str]]:
 
 def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
                           vessel_name: str, vessel_id: int, locs: list,
-                          prior: dict, name_to_id: dict, tau_mm: float) -> tuple[str, str]:
+                          prior: dict, name_to_id: dict,
+                          junction_tau_mm: float) -> tuple[str, str, float | None]:
     """Resolve which of a shared vessel's several locations one instance
-    belongs to. Returns (assigned_location, resolved_by) where resolved_by
-    is one of "junction", "arc", "majority" -- kept for diagnostics."""
+    belongs to. Returns (assigned_location, resolved_by, extra_dist_mm) where
+    resolved_by is one of "junction", "arc", "arc_low_sample_fallback",
+    "majority" -- kept for diagnostics -- and extra_dist_mm is the
+    junction-contact distance for "junction", the lesion-to-skeleton
+    distance for the two arc outcomes, or None for "majority".
+
+    `junction_tau_mm` gates only the junction-object check (step 1 below);
+    it is deliberately separate from the host-vessel search radius
+    (`--tau_mm`, used earlier in geometry.nearest_vessel_label to find
+    `vessel_id` in the first place) -- BA and R/L-ICA-C6-C7 each pack several
+    branch take-offs into a short stretch, so a threshold loose enough for
+    the host-vessel lookup was found to make almost any lesion on those
+    vessels land "close enough" to some unrelated branch's contact patch,
+    stealing trunk/tip instances that a tighter junction-only threshold
+    should leave alone."""
     best_loc, best_dist = None, np.inf
     for loc in locs:
         branch = vsk.JUNCTION_BRANCH.get(loc)
@@ -124,10 +147,10 @@ def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
             continue
         d = vsk.contact_patch_distance(inst, vessel_map, spacing, vessel_id,
                                        branch, name_to_id)
-        if d is not None and d <= tau_mm and d < best_dist:
+        if d is not None and d <= junction_tau_mm and d < best_dist:
             best_loc, best_dist = loc, d
     if best_loc is not None:
-        return best_loc, "junction"
+        return best_loc, "junction", best_dist
 
     arc_info = prior.get("arc", {}).get(vessel_name)
     if arc_info and arc_info["locations"]:
@@ -137,20 +160,27 @@ def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
                                        vsk.PROXIMAL_ANCHOR.get(vessel_name, []),
                                        name_to_id)
             centroid_mm = np.argwhere(inst).mean(0) * np.asarray(spacing, np.float64)
-            frac, _ = vsk.arc_fraction(skel, centroid_mm)
+            frac, skel_dist = vsk.arc_fraction(skel, centroid_mm)
             if frac is not None:
                 bucketed = arc_info["locations"]
                 idx = min(int(np.searchsorted(arc_info["boundaries"], frac)),
                           len(bucketed) - 1)
-                return bucketed[idx]["location"], "arc"
+                entry = bucketed[idx]
+                if entry.get("low_sample"):
+                    return (prior["majority"].get(vessel_name, locs[0]),
+                            "arc_low_sample_fallback", skel_dist)
+                return entry["location"], "arc", skel_dist
 
-    return prior["majority"].get(vessel_name, locs[0]), "majority"
+    return prior["majority"].get(vessel_name, locs[0]), "majority", None
 
 
 def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
                 vessel_names: list, vessel_to_locations: dict, prior: dict,
-                name_to_id: dict, loc_value: dict, tau_mm: float, min_voxels: int):
-    """Returns (final_mask uint16 of location ids, list of per-instance dicts)."""
+                name_to_id: dict, loc_value: dict, tau_mm: float,
+                junction_tau_mm: float, min_voxels: int, gt: np.ndarray | None = None):
+    """Returns (final_mask uint16 of location ids, list of per-instance dicts).
+    `gt` (the case's ground-truth location mask), if given, adds `true_class`
+    and `correct` diagnostic fields per instance -- for --instances_csv."""
     lab, n = ndimage.label(binmask)
     final = np.zeros(binmask.shape, dtype=np.uint16)
     instances = []
@@ -164,6 +194,7 @@ def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
         assigned = None
         vessel_name = None
         resolved_by = None
+        extra_dist = None
         if vessel_id is not None:
             vessel_name = vessel_names[vessel_id - 1]
             locs = vessel_to_locations.get(vessel_name)
@@ -171,11 +202,19 @@ def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
                 if len(locs) == 1:
                     assigned, resolved_by = locs[0], "single"
                 else:
-                    assigned, resolved_by = resolve_shared_vessel(
+                    assigned, resolved_by, extra_dist = resolve_shared_vessel(
                         inst, vessel_map, spacing, vessel_name, vessel_id,
-                        locs, prior, name_to_id, tau_mm)
-        instances.append(dict(size=size, vessel=vessel_name, dist=dist,
-                              assigned=assigned, resolved_by=resolved_by))
+                        locs, prior, name_to_id, junction_tau_mm)
+
+        rec = dict(size=size, vessel=vessel_name, dist=dist,
+                  assigned=assigned, resolved_by=resolved_by, extra_dist=extra_dist)
+        if gt is not None:
+            vals, counts = np.unique(gt[inst], return_counts=True)
+            nz = vals != 0
+            true_cls = int(vals[nz][np.argmax(counts[nz])]) if nz.any() else 0
+            rec["true_class"] = true_cls
+            rec["correct"] = bool(assigned is not None and loc_value[assigned] == true_cls)
+        instances.append(rec)
         if assigned is not None:
             final[inst] = loc_value[assigned]
     return final, instances
@@ -246,13 +285,25 @@ def main():
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--vessel_source", choices=["gt", "pred"], default="gt")
     ap.add_argument("--vessel_pred_dir", type=Path, default=None)
-    ap.add_argument("--tau_mm", type=float, default=4.0)
+    ap.add_argument("--tau_mm", type=float, default=4.0,
+                    help="host-vessel search radius (geometry.nearest_vessel_label)")
+    ap.add_argument("--junction_tau_mm", type=float, default=4.0,
+                    help="separate, tighter radius for the junction contact-patch "
+                         "check inside resolve_shared_vessel -- BA/ICA-C6-C7 pack "
+                         "several branches into a short stretch, so this is kept "
+                         "independent of --tau_mm rather than reusing it")
     ap.add_argument("--min_voxels", type=int, default=3)
     ap.add_argument("--prior", type=Path, default=PRIOR_PATH)
     ap.add_argument("--write_masks", action="store_true")
     ap.add_argument("--out_dir", type=Path, default=C.WORK / "task2_rule_masks")
     ap.add_argument("--out_csv", type=Path,
                     default=C.LOG_ROOT / "task2_rule_assignment.csv")
+    ap.add_argument("--instances_csv", type=Path, default=None,
+                    help="optional per-instance diagnostic dump (case, vessel, "
+                         "resolved_by, distance, true/predicted class, correct) "
+                         "-- e.g. to check the actual junction-contact distance "
+                         "behind a given resolved_by=junction correct hit before "
+                         "picking --junction_tau_mm")
     a = ap.parse_args()
 
     if a.vessel_source == "pred" and a.vessel_pred_dir is None:
@@ -291,7 +342,8 @@ def main():
 
         final, instances = assign_case(binmask, vessel_map, meta["spacing"],
                                        spec.vessels, vessel_to_locations, prior,
-                                       name_to_id, loc_value, a.tau_mm, a.min_voxels)
+                                       name_to_id, loc_value, a.tau_mm,
+                                       a.junction_tau_mm, a.min_voxels, gt=gt)
         for inst in instances:
             inst["case"] = case
         all_instances.extend(instances)
@@ -307,6 +359,20 @@ def main():
          f"{len(all_instances)} instances assigned a location)")
     resolved_counts = Counter(i["resolved_by"] for i in all_instances)
     print(f"  resolution method: {dict(resolved_counts)}")
+
+    if a.instances_csv is not None:
+        id_to_loc = {v: k for k, v in loc_value.items()}
+        a.instances_csv.parent.mkdir(parents=True, exist_ok=True)
+        with open(a.instances_csv, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["case", "vessel", "size", "host_dist_mm", "resolved_by",
+                       "extra_dist_mm", "assigned", "true_class", "correct"])
+            for r in all_instances:
+                w.writerow([r["case"], r["vessel"], r["size"], r["dist"],
+                           r["resolved_by"], r["extra_dist"], r["assigned"],
+                           id_to_loc.get(r.get("true_class"), "background"),
+                           r.get("correct")])
+        print(f"  per-instance diagnostics written to {a.instances_csv}")
 
     per_class, pooled_acc, n_components = score(cases, preds, gts, loc_value, spec.n_loc)
 

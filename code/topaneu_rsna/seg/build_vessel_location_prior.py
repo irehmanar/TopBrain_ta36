@@ -18,7 +18,12 @@ fallback):
               cohort-derived position statistic, not a per-fold-sensitive
               learned parameter (same treatment labels.json's declared
               location_to_vessel map already gets), so no train/val split is
-              needed here.
+              needed here. Any location with fewer than `--min_arc_samples`
+              contributing instances is flagged "low_sample": true rather
+              than dropped outright -- it still anchors a boundary against
+              its neighbours, but assign_location_rule.py refuses to return
+              it, falling back to the vessel's majority label instead of
+              trusting a median computed off one or two noisy points.
   "majority"  The original flat "most frequent location on this vessel"
               table, kept as a fallback for cases where a training case's own
               vessel segmentation couldn't be oriented (no anchor vessel
@@ -54,6 +59,10 @@ OUT_PATH = C.CODE_ROOT / "topaneu_rsna" / "vessel_location_prior.json"
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=OUT_PATH)
+    ap.add_argument("--min_arc_samples", type=int, default=3,
+                    help="locations with fewer than this many arc-fraction "
+                         "samples are flagged low_sample=true and must not be "
+                         "returned by assign_location_rule.py's arc lookup")
     a = ap.parse_args()
 
     spec = C.load_labels()
@@ -128,8 +137,17 @@ def main():
         out["majority"][v] = ranked[0][0]
         print(f"  {v:20s} majority -> {ranked}")
 
+        # `low_sample` entries stay in the sorted order (so a thin-data
+        # location's noisy median still places a sane boundary between its
+        # confident neighbours -- dropping it outright would silently hand
+        # its whole territory to whichever neighbour happens to be next) but
+        # are flagged so assign_location_rule.py can refuse to actually
+        # *return* that location from a single-digit sample count, falling
+        # back to the vessel's majority label instead of asserting a class
+        # off e.g. one noisy instance.
         entries = sorted(
-            ({"location": loc, "median_frac": float(np.median(fracs)), "n": len(fracs)}
+            ({"location": loc, "median_frac": float(np.median(fracs)), "n": len(fracs),
+              "low_sample": len(fracs) < a.min_arc_samples}
              for loc, fracs in arc_fractions[v].items() if fracs),
             key=lambda e: e["median_frac"])
         boundaries = [round((e1["median_frac"] + e2["median_frac"]) / 2.0, 4)
@@ -137,7 +155,8 @@ def main():
         out["arc"][v] = {"locations": entries, "boundaries": boundaries}
         if entries:
             print(f"  {v:20s} arc-order -> "
-                 f"{[(e['location'], round(e['median_frac'], 3), e['n']) for e in entries]}")
+                 f"{[(e['location'], round(e['median_frac'], 3), e['n'],
+                     'LOW-SAMPLE' if e['low_sample'] else '') for e in entries]}")
         else:
             print(f"  {v:20s} arc-order -> no orientable instances, majority-only")
 
