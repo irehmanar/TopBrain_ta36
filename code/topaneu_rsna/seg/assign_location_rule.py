@@ -43,9 +43,18 @@ For each connected component of the binary aneurysm prediction:
           anchor vessel is missing/unsegmented), has no arc-fraction table
           at all, or landed on a low-sample bucket, fall back to the flat
           cohort-majority location.
-  3. laterality falls out for free: vessel names are already lateralized
-     (e.g. "L-PICA" vs "R-PICA"), so matching the correct-side vessel by
-     geometry already gets the side right -- no separate midline fit.
+  3. laterality mostly falls out for free: vessel names are already
+     lateralized (e.g. "L-PICA" vs "R-PICA"), so matching the correct-side
+     vessel by geometry already gets the side right for locations on a
+     paired host vessel -- no midline fit needed there. The exception is a
+     junction-type location shared by an *unpaired* midline host vessel
+     (e.g. "BA" hosts both "R-1.9 BA-SCA junction" and "L-1.9 BA-SCA
+     junction" in the same step-2a contact-patch loop above), where nothing
+     upstream already forces the correct side; for those,
+     utils.vessel_skeleton.reconcile_side applies Paper 1's side-
+     reconciliation directly -- a per-case midline calibrated from the
+     vessel map's own other paired R-/L- labels overrides the contact-patch
+     winner's side if the lesion's own position disagrees with it.
 An instance with no vessel label within tau is left unassigned (background in
 the painted mask; scored as a miss for whatever its true class is, never a
 false positive for any class).
@@ -150,6 +159,15 @@ def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
         if d is not None and d <= junction_tau_mm and d < best_dist:
             best_loc, best_dist = loc, d
     if best_loc is not None:
+        # Side reconciliation (Paper 1): an unpaired midline host vessel like
+        # "BA" hosts both "R-1.9 BA-SCA junction" and "L-1.9 BA-SCA junction"
+        # in the same loop above, so nothing upstream already forces the
+        # correct side the way a paired host vessel (e.g. "L-PICA") does --
+        # trust the lesion's own position relative to a per-case calibrated
+        # midline over a contact-patch distance that can be swayed by
+        # segmentation noise between two closely-spaced bilateral branches.
+        best_loc = vsk.reconcile_side(best_loc, inst, vessel_map, spacing,
+                                      name_to_id, set(locs))
         return best_loc, "junction", best_dist
 
     arc_info = prior.get("arc", {}).get(vessel_name)

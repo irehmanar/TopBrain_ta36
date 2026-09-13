@@ -114,12 +114,3 @@ def nearest_vessel_label(instance_mask, vessel_map, spacing, tau_mm=4.0, pad_mm=
     if best_dist > tau_mm:
         return None, best_dist, []
     return best_label, best_dist, []
-
-
-def midline_side(point_zyx, spacing, shape) -> str:
-    """Coarse left/right call from array position alone, used only as a
-    fallback when a vessel name carries no R-/L- prefix to read laterality
-    off directly. `x` (last array axis) is assumed to increase toward one
-    side; callers that know the true anatomical/RAS convention for their
-    data should prefer that instead of this positional guess."""
-    return "R" if point_zyx[2] < shape[2] / 2.0 else "L"

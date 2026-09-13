@@ -202,6 +202,80 @@ def arc_fraction(skel: Skeleton, point_mm) -> tuple[float | None, float]:
     return (float(f) if skel.proximal_first else float(1.0 - f)), dist
 
 
+def mirror_location_name(loc: str) -> str | None:
+    """"R-..." <-> "L-...", or None for an unsided location (e.g. "1.4 BA
+    trunk", "4.1 Acom complex") -- used to find a junction candidate's
+    mirrored counterpart for the side-reconciliation check below."""
+    if loc.startswith("R-"):
+        return "L-" + loc[2:]
+    if loc.startswith("L-"):
+        return "R-" + loc[2:]
+    return None
+
+
+def estimate_midline(vessel_map: np.ndarray, spacing,
+                     name_to_id: dict) -> tuple[float, bool] | None:
+    """Sagittal midline position (mm, along the last/x array axis) and which
+    side sits at larger x, calibrated from THIS case's own paired R-/L-
+    vessel labels rather than assumed from image geometry -- Paper 1's own
+    side-reconciliation step fits its midline the same way (from the vessel
+    map's own left/right label pairs), since a fixed image-center guess
+    doesn't hold under arbitrary patient positioning/cropping.
+
+    Returns (midline_x_mm, positive_side_is_r), or None if this case has no
+    usable paired vessel (both sides present and non-empty) to calibrate
+    from -- callers should skip the side check entirely in that case rather
+    than guess."""
+    sp = np.asarray(spacing, np.float64)
+    mids, diffs = [], []
+    seen = set()
+    for v, vid in name_to_id.items():
+        if not v.startswith("R-") or v in seen:
+            continue
+        lv = "L-" + v[2:]
+        lid = name_to_id.get(lv)
+        if lid is None:
+            continue
+        seen.add(v); seen.add(lv)
+        rmask, lmask = vessel_map == vid, vessel_map == lid
+        if not rmask.any() or not lmask.any():
+            continue
+        rx = np.argwhere(rmask).mean(0)[-1] * sp[-1]
+        lx = np.argwhere(lmask).mean(0)[-1] * sp[-1]
+        mids.append((rx + lx) / 2.0)
+        diffs.append(rx - lx)
+    if not mids:
+        return None
+    return float(np.median(mids)), bool(np.median(diffs) > 0)
+
+
+def reconcile_side(loc: str, inst_mask: np.ndarray, vessel_map: np.ndarray,
+                   spacing, name_to_id: dict, candidate_locs: set) -> str:
+    """Paper 1's side-reconciliation step: when a lesion's own spatial
+    position contradicts the side implied by its assigned (possibly
+    mislabeled-by-segmentation-noise) vessel/junction match, trust the
+    geometry and re-side the label -- but only if the mirrored location is
+    itself actually a legal candidate on this vessel (`candidate_locs`) and
+    a midline could be calibrated for this case; otherwise returns `loc`
+    unchanged. This matters specifically for junction-type locations shared
+    by an unpaired midline vessel (e.g. BA hosts both "R-1.9 BA-SCA
+    junction" and "L-1.9 BA-SCA junction"), where nothing upstream already
+    forces the correct side the way a paired host vessel (e.g. "L-PICA")
+    does automatically."""
+    mirrored = mirror_location_name(loc)
+    if mirrored is None or mirrored not in candidate_locs:
+        return loc
+    mid = estimate_midline(vessel_map, spacing, name_to_id)
+    if mid is None:
+        return loc
+    midline_x, positive_is_r = mid
+    sp = np.asarray(spacing, np.float64)
+    lesion_x = np.argwhere(inst_mask).mean(0)[-1] * sp[-1]
+    implied_r = (lesion_x > midline_x) == positive_is_r
+    assigned_is_r = loc.startswith("R-")
+    return loc if implied_r == assigned_is_r else mirrored
+
+
 def contact_patch_distance(instance_mask: np.ndarray, vessel_map: np.ndarray,
                            spacing, host_id: int, branch_names: list[str],
                            name_to_id: dict, pad_mm: float = 20.0) -> float | None:
