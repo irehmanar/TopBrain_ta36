@@ -8,16 +8,32 @@ segmenter finds *where* the lesion is, a vessel segmenter's own labels say
 reads the location off that anatomy, per lesion instance rather than per
 voxel.
 
-Simple first pass (see build_vessel_location_prior.py for why): for each
-connected component of the binary aneurysm prediction,
+For each connected component of the binary aneurysm prediction:
   1. find its nearest/host vessel label within `--tau_mm` of the instance
      (utils.geometry.nearest_vessel_label -- touching labels win outright,
      otherwise nearest by Euclidean distance transform);
   2. look up that vessel's location(s) via labels.json's location_to_vessel
-     (inverted here to vessel -> locations); vessels hosting exactly one
-     location resolve directly; vessels hosting several (e.g. "BA" hosts 7)
-     resolve to that vessel's cohort-majority location from
-     vessel_location_prior.json;
+     (inverted here to vessel -> locations). Vessels hosting exactly one
+     location resolve directly. Vessels hosting several (e.g. "BA" hosts 7)
+     resolve in priority order (the first postmortem's diagnosis: a flat
+     cohort-majority guess here was locking ~2/3 of these locations at
+     permanent zero recall, since it can only ever emit one answer per
+     vessel -- see the run this replaces):
+       a. junction-object check (utils.vessel_skeleton.JUNCTION_BRANCH,
+          Paper 1's treatment of junctions as a contact patch rather than a
+          position): for each of the vessel's hosted locations that is
+          junction/bifurcation/terminus-defined, measure the instance's
+          distance to the voxel contact patch between the host vessel and
+          that location's declared branch vessel; if any patch is within
+          tau, the closest one wins;
+       b. otherwise, arc-fraction lookup (utils.vessel_skeleton): skeletonize
+          this case's own copy of the host vessel, orient it via its
+          declared proximal anchor, project the instance's centroid onto it,
+          and look up which cohort-derived arc-fraction bucket
+          (vessel_location_prior.json's "arc" table) it falls into;
+       c. if the vessel's skeleton can't be oriented in this case (its
+          anchor vessel is missing/unsegmented) or has no arc-fraction
+          table at all, fall back to the flat cohort-majority location.
   3. laterality falls out for free: vessel names are already lateralized
      (e.g. "L-PICA" vs "R-PICA"), so matching the correct-side vessel by
      geometry already gets the side right -- no separate midline fit.
@@ -59,7 +75,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -69,6 +85,7 @@ from tqdm import tqdm
 from topaneu_rsna import config as C
 from topaneu_rsna.utils import geometry as geo
 from topaneu_rsna.utils import io as uio
+from topaneu_rsna.utils import vessel_skeleton as vsk
 from topaneu_rsna.seg.evaluate_location import hd95
 
 PRIOR_PATH = C.CODE_ROOT / "topaneu_rsna" / "vessel_location_prior.json"
@@ -94,9 +111,45 @@ def build_vessel_to_locations(spec) -> dict[str, list[str]]:
     return dict(out)
 
 
+def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
+                          vessel_name: str, vessel_id: int, locs: list,
+                          prior: dict, name_to_id: dict, tau_mm: float) -> tuple[str, str]:
+    """Resolve which of a shared vessel's several locations one instance
+    belongs to. Returns (assigned_location, resolved_by) where resolved_by
+    is one of "junction", "arc", "majority" -- kept for diagnostics."""
+    best_loc, best_dist = None, np.inf
+    for loc in locs:
+        branch = vsk.JUNCTION_BRANCH.get(loc)
+        if not branch:
+            continue
+        d = vsk.contact_patch_distance(inst, vessel_map, spacing, vessel_id,
+                                       branch, name_to_id)
+        if d is not None and d <= tau_mm and d < best_dist:
+            best_loc, best_dist = loc, d
+    if best_loc is not None:
+        return best_loc, "junction"
+
+    arc_info = prior.get("arc", {}).get(vessel_name)
+    if arc_info and arc_info["locations"]:
+        raw = vsk.extract_skeleton(vessel_map == vessel_id, spacing)
+        if raw is not None:
+            skel = vsk.orient_skeleton(raw, vessel_map, spacing,
+                                       vsk.PROXIMAL_ANCHOR.get(vessel_name, []),
+                                       name_to_id)
+            centroid_mm = np.argwhere(inst).mean(0) * np.asarray(spacing, np.float64)
+            frac, _ = vsk.arc_fraction(skel, centroid_mm)
+            if frac is not None:
+                bucketed = arc_info["locations"]
+                idx = min(int(np.searchsorted(arc_info["boundaries"], frac)),
+                          len(bucketed) - 1)
+                return bucketed[idx]["location"], "arc"
+
+    return prior["majority"].get(vessel_name, locs[0]), "majority"
+
+
 def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
-                vessel_names: list, vessel_to_locations: dict, majority: dict,
-                loc_value: dict, tau_mm: float, min_voxels: int):
+                vessel_names: list, vessel_to_locations: dict, prior: dict,
+                name_to_id: dict, loc_value: dict, tau_mm: float, min_voxels: int):
     """Returns (final_mask uint16 of location ids, list of per-instance dicts)."""
     lab, n = ndimage.label(binmask)
     final = np.zeros(binmask.shape, dtype=np.uint16)
@@ -110,12 +163,19 @@ def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
             inst, vessel_map, spacing, tau_mm=tau_mm)
         assigned = None
         vessel_name = None
+        resolved_by = None
         if vessel_id is not None:
             vessel_name = vessel_names[vessel_id - 1]
             locs = vessel_to_locations.get(vessel_name)
             if locs:
-                assigned = locs[0] if len(locs) == 1 else majority.get(vessel_name, locs[0])
-        instances.append(dict(size=size, vessel=vessel_name, dist=dist, assigned=assigned))
+                if len(locs) == 1:
+                    assigned, resolved_by = locs[0], "single"
+                else:
+                    assigned, resolved_by = resolve_shared_vessel(
+                        inst, vessel_map, spacing, vessel_name, vessel_id,
+                        locs, prior, name_to_id, tau_mm)
+        instances.append(dict(size=size, vessel=vessel_name, dist=dist,
+                              assigned=assigned, resolved_by=resolved_by))
         if assigned is not None:
             final[inst] = loc_value[assigned]
     return final, instances
@@ -203,8 +263,9 @@ def main():
 
     spec = C.load_labels()
     vessel_to_locations = build_vessel_to_locations(spec)
-    majority = json.loads(a.prior.read_text())["majority"]
+    prior = json.loads(a.prior.read_text())
     loc_value = {loc: i + 1 for i, loc in enumerate(spec.locations)}
+    name_to_id = {v: i + 1 for i, v in enumerate(spec.vessels)}
 
     bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
     print(f"{len(bin_paths)} held-out binary predictions "
@@ -229,8 +290,8 @@ def main():
         gt, _ = uio.read(gt_p)
 
         final, instances = assign_case(binmask, vessel_map, meta["spacing"],
-                                       spec.vessels, vessel_to_locations, majority,
-                                       loc_value, a.tau_mm, a.min_voxels)
+                                       spec.vessels, vessel_to_locations, prior,
+                                       name_to_id, loc_value, a.tau_mm, a.min_voxels)
         for inst in instances:
             inst["case"] = case
         all_instances.extend(instances)
@@ -244,6 +305,8 @@ def main():
     print(f"{len(cases)} cases scored "
          f"({sum(1 for i in all_instances if i['assigned'] is not None)}/"
          f"{len(all_instances)} instances assigned a location)")
+    resolved_counts = Counter(i["resolved_by"] for i in all_instances)
+    print(f"  resolution method: {dict(resolved_counts)}")
 
     per_class, pooled_acc, n_components = score(cases, preds, gts, loc_value, spec.n_loc)
 
