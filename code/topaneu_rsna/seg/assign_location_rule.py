@@ -15,34 +15,45 @@ For each connected component of the binary aneurysm prediction:
   2. look up that vessel's location(s) via labels.json's location_to_vessel
      (inverted here to vessel -> locations). Vessels hosting exactly one
      location resolve directly. Vessels hosting several (e.g. "BA" hosts 7)
-     resolve in priority order (the first postmortem's diagnosis: a flat
-     cohort-majority guess here was locking ~2/3 of these locations at
-     permanent zero recall, since it can only ever emit one answer per
-     vessel -- see the run this replaces):
-       a. junction-object check (utils.vessel_skeleton.JUNCTION_BRANCH,
+     go through resolve_shared_vessel, which computes a junction-object
+     candidate and an arc-fraction candidate independently and lets them
+     compete, rather than the junction check short-circuiting the arc one
+     outright (an earlier, junction-first version did exactly that, and
+     concrete evidence showed it actively wrong: two of BA's three true
+     "1.10 BA tip" instances computed textbook-confident arc-fractions --
+     0.988 and 1.000, against a 0.9847 bucket boundary -- but still lost to
+     the junction check, because BA-SCA's branch point sits only 0.5-1.1mm
+     away on this vessel, well inside any radius loose enough to catch
+     genuine junction cases elsewhere):
+       a. junction-object candidate (utils.vessel_skeleton.JUNCTION_BRANCH,
           Paper 1's treatment of junctions as a contact patch rather than a
           position): for each of the vessel's hosted locations that is
           junction/bifurcation/terminus-defined, measure the instance's
           distance to the voxel contact patch between the host vessel and
-          that location's declared branch vessel; if any patch is within
-          `--junction_tau_mm` (kept separate from `--tau_mm` above -- a
-          first pass reusing the same 4mm for both over-triggered badly on
-          BA and R/L-ICA-C6-C7, whose several branch take-offs sit close
-          together along a short stretch, stealing trunk/tip instances that
-          a tighter junction-only radius leaves alone), the closest one wins;
-       b. otherwise, arc-fraction lookup (utils.vessel_skeleton): skeletonize
-          this case's own copy of the host vessel, orient it via its
-          declared proximal anchor, project the instance's centroid onto it,
-          and look up which cohort-derived arc-fraction bucket
-          (vessel_location_prior.json's "arc" table) it falls into -- unless
-          that bucket's location is flagged "low_sample" (built from fewer
-          than build_vessel_location_prior.py's --min_arc_samples training
-          instances), in which case it falls through to (c) rather than
-          asserting a class off one or two noisy points;
-       c. if the vessel's skeleton can't be oriented in this case (its
-          anchor vessel is missing/unsegmented), has no arc-fraction table
-          at all, or landed on a low-sample bucket, fall back to the flat
-          cohort-majority location.
+          that location's declared branch vessel; the closest one within
+          `--junction_tau_mm` is this candidate (or none, if nothing
+          qualifies);
+       b. arc-fraction candidate (utils.vessel_skeleton): skeletonize this
+          case's own copy of the host vessel, orient it via its declared
+          proximal anchor, project the instance's centroid onto it, and look
+          up which cohort-derived arc-fraction bucket
+          (vessel_location_prior.json's "arc" table) it falls into, flagging
+          whether the fraction sits within `--arc_ambiguous_margin` of the
+          boundary to a neighbouring bucket (a close call) or confidently
+          inside one. A bucket flagged "low_sample" (built from fewer than
+          build_vessel_location_prior.py's --min_arc_samples training
+          instances) counts as no candidate at all -- untrustworthy either
+          way;
+       c. the junction candidate wins only if the arc candidate doesn't
+          exist, OR the junction distance is within the tighter
+          `--junction_override_mm` AND the arc candidate is itself
+          ambiguous -- i.e. a confident position reading should not lose
+          just because some junction happens to be nearby; it only loses
+          when the junction evidence is strong and the position evidence is
+          itself equivocal. Otherwise the arc candidate wins;
+       d. if neither produced anything usable (including the low_sample
+          case, kept as its own "arc_low_sample_fallback" diagnostic
+          category), fall back to the flat cohort-majority location.
   3. laterality mostly falls out for free: vessel names are already
      lateralized (e.g. "L-PICA" vs "R-PICA"), so matching the correct-side
      vessel by geometry already gets the side right for locations on a
@@ -129,26 +140,12 @@ def build_vessel_to_locations(spec) -> dict[str, list[str]]:
     return dict(out)
 
 
-def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
-                          vessel_name: str, vessel_id: int, locs: list,
-                          prior: dict, name_to_id: dict,
-                          junction_tau_mm: float) -> tuple[str, str, float | None]:
-    """Resolve which of a shared vessel's several locations one instance
-    belongs to. Returns (assigned_location, resolved_by, extra_dist_mm) where
-    resolved_by is one of "junction", "arc", "arc_low_sample_fallback",
-    "majority" -- kept for diagnostics -- and extra_dist_mm is the
-    junction-contact distance for "junction", the lesion-to-skeleton
-    distance for the two arc outcomes, or None for "majority".
-
-    `junction_tau_mm` gates only the junction-object check (step 1 below);
-    it is deliberately separate from the host-vessel search radius
-    (`--tau_mm`, used earlier in geometry.nearest_vessel_label to find
-    `vessel_id` in the first place) -- BA and R/L-ICA-C6-C7 each pack several
-    branch take-offs into a short stretch, so a threshold loose enough for
-    the host-vessel lookup was found to make almost any lesion on those
-    vessels land "close enough" to some unrelated branch's contact patch,
-    stealing trunk/tip instances that a tighter junction-only threshold
-    should leave alone."""
+def _junction_candidate(inst, vessel_map, spacing, vessel_id, locs,
+                        name_to_id, junction_tau_mm):
+    """Best junction-object candidate within `junction_tau_mm`, or
+    (None, inf) if none qualifies. Does NOT decide anything by itself --
+    see resolve_shared_vessel for how this competes against the arc
+    candidate rather than winning outright just by existing."""
     best_loc, best_dist = None, np.inf
     for loc in locs:
         branch = vsk.JUNCTION_BRANCH.get(loc)
@@ -158,36 +155,105 @@ def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
                                        branch, name_to_id)
         if d is not None and d <= junction_tau_mm and d < best_dist:
             best_loc, best_dist = loc, d
-    if best_loc is not None:
+    return best_loc, best_dist
+
+
+def _arc_candidate(inst, vessel_map, spacing, vessel_name, vessel_id, prior,
+                   name_to_id, arc_ambiguous_margin):
+    """Best arc-fraction candidate. Returns (location_or_None,
+    lesion-to-skeleton distance, is_ambiguous, is_low_sample):
+      - unorientable / no table at all: (None, inf, False, False)
+      - orientable but the winning bucket is low_sample-flagged: (None,
+        skel_dist, False, True) -- untrustworthy, but distinct from the
+        "couldn't compute a position at all" case so callers can still
+        report it as its own diagnostic category
+      - confident hit: (location, skel_dist, is_ambiguous, False), where
+        `is_ambiguous` is True when the fraction sits within
+        `arc_ambiguous_margin` of the boundary separating its bucket from a
+        neighbour -- a close call between two adjacent locations rather
+        than sitting confidently inside one."""
+    arc_info = prior.get("arc", {}).get(vessel_name)
+    if not arc_info or not arc_info["locations"]:
+        return None, np.inf, False, False
+    raw = vsk.extract_skeleton(vessel_map == vessel_id, spacing)
+    if raw is None:
+        return None, np.inf, False, False
+    skel = vsk.orient_skeleton(raw, vessel_map, spacing,
+                               vsk.PROXIMAL_ANCHOR.get(vessel_name, []), name_to_id)
+    centroid_mm = np.argwhere(inst).mean(0) * np.asarray(spacing, np.float64)
+    frac, skel_dist = vsk.arc_fraction(skel, centroid_mm)
+    if frac is None:
+        return None, np.inf, False, False
+
+    bucketed = arc_info["locations"]
+    boundaries = arc_info["boundaries"]
+    idx = min(int(np.searchsorted(boundaries, frac)), len(bucketed) - 1)
+    entry = bucketed[idx]
+    if entry.get("low_sample"):
+        return None, skel_dist, False, True
+
+    nearby = [b for b in (boundaries[idx - 1] if idx > 0 else None,
+                         boundaries[idx] if idx < len(boundaries) else None)
+             if b is not None]
+    ambiguous = bool(nearby) and min(abs(frac - b) for b in nearby) < arc_ambiguous_margin
+    return entry["location"], skel_dist, ambiguous, False
+
+
+def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
+                          vessel_name: str, vessel_id: int, locs: list,
+                          prior: dict, name_to_id: dict, junction_tau_mm: float,
+                          junction_override_mm: float,
+                          arc_ambiguous_margin: float) -> tuple[str, str, float | None]:
+    """Resolve which of a shared vessel's several locations one instance
+    belongs to. Both the junction-object check and the arc-fraction check
+    always compute their own best candidate independently (neither
+    short-circuits the other) -- this replaced an earlier junction-first
+    version after concrete evidence it was actively wrong: two of BA's three
+    true "1.10 BA tip" instances computed textbook-confident arc-fractions
+    (0.988 and 1.000, against a 0.9847 bucket boundary) but were still
+    intercepted by the junction check, because BA-SCA's branch point sits
+    only 0.5-1.1mm away -- well inside any threshold loose enough to catch
+    genuine junction cases elsewhere on the same vessel. Tightening
+    `--junction_tau_mm` further couldn't have fixed this: those distances
+    were already small, the check was just being asked the wrong question
+    (nearest vs. best-explains-the-evidence).
+
+    The junction candidate now only overrides the arc candidate when it is
+    BOTH close in absolute terms (`junction_override_mm`, meant to be
+    tighter than `junction_tau_mm`) AND the arc call is itself ambiguous
+    (`arc_ambiguous_margin` of a bucket boundary) rather than sitting
+    confidently inside a bucket -- a confident arc position should not lose
+    to a junction match just because one happens to be nearby; it should
+    only lose when the junction evidence is strong AND the position
+    evidence is itself equivocal.
+
+    Returns (assigned_location, resolved_by, extra_dist_mm): resolved_by is
+    one of "junction", "arc", "arc_low_sample_fallback", "majority";
+    extra_dist_mm is the junction-contact or lesion-to-skeleton distance
+    (whichever was used), or None for "majority"."""
+    j_loc, j_dist = _junction_candidate(inst, vessel_map, spacing, vessel_id,
+                                        locs, name_to_id, junction_tau_mm)
+    a_loc, a_dist, a_ambiguous, a_low_sample = _arc_candidate(
+        inst, vessel_map, spacing, vessel_name, vessel_id, prior, name_to_id,
+        arc_ambiguous_margin)
+
+    if j_loc is not None and (a_loc is None or (j_dist <= junction_override_mm
+                                                and a_ambiguous)):
         # Side reconciliation (Paper 1): an unpaired midline host vessel like
         # "BA" hosts both "R-1.9 BA-SCA junction" and "L-1.9 BA-SCA junction"
-        # in the same loop above, so nothing upstream already forces the
-        # correct side the way a paired host vessel (e.g. "L-PICA") does --
-        # trust the lesion's own position relative to a per-case calibrated
-        # midline over a contact-patch distance that can be swayed by
-        # segmentation noise between two closely-spaced bilateral branches.
-        best_loc = vsk.reconcile_side(best_loc, inst, vessel_map, spacing,
-                                      name_to_id, set(locs))
-        return best_loc, "junction", best_dist
+        # among `locs`, so nothing upstream already forces the correct side
+        # the way a paired host vessel (e.g. "L-PICA") does -- trust the
+        # lesion's own position relative to a per-case calibrated midline
+        # over a contact-patch distance that can be swayed by segmentation
+        # noise between two closely-spaced bilateral branches.
+        j_loc = vsk.reconcile_side(j_loc, inst, vessel_map, spacing, name_to_id, set(locs))
+        return j_loc, "junction", j_dist
 
-    arc_info = prior.get("arc", {}).get(vessel_name)
-    if arc_info and arc_info["locations"]:
-        raw = vsk.extract_skeleton(vessel_map == vessel_id, spacing)
-        if raw is not None:
-            skel = vsk.orient_skeleton(raw, vessel_map, spacing,
-                                       vsk.PROXIMAL_ANCHOR.get(vessel_name, []),
-                                       name_to_id)
-            centroid_mm = np.argwhere(inst).mean(0) * np.asarray(spacing, np.float64)
-            frac, skel_dist = vsk.arc_fraction(skel, centroid_mm)
-            if frac is not None:
-                bucketed = arc_info["locations"]
-                idx = min(int(np.searchsorted(arc_info["boundaries"], frac)),
-                          len(bucketed) - 1)
-                entry = bucketed[idx]
-                if entry.get("low_sample"):
-                    return (prior["majority"].get(vessel_name, locs[0]),
-                            "arc_low_sample_fallback", skel_dist)
-                return entry["location"], "arc", skel_dist
+    if a_loc is not None:
+        return a_loc, "arc", a_dist
+
+    if a_low_sample:
+        return prior["majority"].get(vessel_name, locs[0]), "arc_low_sample_fallback", a_dist
 
     return prior["majority"].get(vessel_name, locs[0]), "majority", None
 
@@ -195,7 +261,9 @@ def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
 def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
                 vessel_names: list, vessel_to_locations: dict, prior: dict,
                 name_to_id: dict, loc_value: dict, tau_mm: float,
-                junction_tau_mm: float, min_voxels: int, gt: np.ndarray | None = None):
+                junction_tau_mm: float, junction_override_mm: float,
+                arc_ambiguous_margin: float, min_voxels: int,
+                gt: np.ndarray | None = None):
     """Returns (final_mask uint16 of location ids, list of per-instance dicts).
     `gt` (the case's ground-truth location mask), if given, adds `true_class`
     and `correct` diagnostic fields per instance -- for --instances_csv."""
@@ -222,7 +290,8 @@ def assign_case(binmask: np.ndarray, vessel_map: np.ndarray, spacing,
                 else:
                     assigned, resolved_by, extra_dist = resolve_shared_vessel(
                         inst, vessel_map, spacing, vessel_name, vessel_id,
-                        locs, prior, name_to_id, junction_tau_mm)
+                        locs, prior, name_to_id, junction_tau_mm,
+                        junction_override_mm, arc_ambiguous_margin)
 
         rec = dict(size=size, vessel=vessel_name, dist=dist,
                   assigned=assigned, resolved_by=resolved_by, extra_dist=extra_dist)
@@ -306,10 +375,23 @@ def main():
     ap.add_argument("--tau_mm", type=float, default=4.0,
                     help="host-vessel search radius (geometry.nearest_vessel_label)")
     ap.add_argument("--junction_tau_mm", type=float, default=4.0,
-                    help="separate, tighter radius for the junction contact-patch "
-                         "check inside resolve_shared_vessel -- BA/ICA-C6-C7 pack "
-                         "several branches into a short stretch, so this is kept "
-                         "independent of --tau_mm rather than reusing it")
+                    help="candidacy radius for the junction contact-patch check -- "
+                         "how far a lesion may be from a branch contact patch and "
+                         "still be considered a junction candidate at all (kept "
+                         "independent of --tau_mm; see --junction_override_mm for "
+                         "the separate, tighter bar for actually preferring it "
+                         "over a competing arc-fraction candidate)")
+    ap.add_argument("--junction_override_mm", type=float, default=1.5,
+                    help="a junction candidate only overrides a competing, "
+                         "non-ambiguous arc-fraction candidate when its distance "
+                         "is within this (tighter than --junction_tau_mm) bound -- "
+                         "see resolve_shared_vessel for why a merely-qualifying "
+                         "junction distance isn't enough on its own")
+    ap.add_argument("--arc_ambiguous_margin", type=float, default=0.03,
+                    help="an arc-fraction candidate is 'ambiguous' (and so can "
+                         "lose to a close junction candidate) when its fraction "
+                         "sits within this margin, in [0,1] arc-length units, of "
+                         "the boundary separating its bucket from a neighbour")
     ap.add_argument("--min_voxels", type=int, default=3)
     ap.add_argument("--prior", type=Path, default=PRIOR_PATH)
     ap.add_argument("--write_masks", action="store_true")
@@ -361,7 +443,8 @@ def main():
         final, instances = assign_case(binmask, vessel_map, meta["spacing"],
                                        spec.vessels, vessel_to_locations, prior,
                                        name_to_id, loc_value, a.tau_mm,
-                                       a.junction_tau_mm, a.min_voxels, gt=gt)
+                                       a.junction_tau_mm, a.junction_override_mm,
+                                       a.arc_ambiguous_margin, a.min_voxels, gt=gt)
         for inst in instances:
             inst["case"] = case
         all_instances.extend(instances)
