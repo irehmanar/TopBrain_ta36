@@ -152,15 +152,47 @@ def main():
     print(f"  classifier right, rule wrong: {clf_right}")
     print(f"  both wrong: {both_wrong}")
 
+    # The rule always outputs a real location whenever it has a host vessel --
+    # it never says "not a lesion" -- so every background-hallucination
+    # instance (true_class == "background", ~29% of the whole population per
+    # filter_background_fp.py) is an automatic loss for the rule here, while
+    # the classifier can score a "win" simply by correctly recognising junk
+    # as junk. That's a real, useful skill, but it is NOT location-assignment
+    # accuracy, and it plays no part in the official pooled-per-component
+    # metric (background instances never correspond to a ground-truth
+    # component to be scored against either way). Splitting this out is the
+    # only honest way to judge whether the classifier is actually better at
+    # naming a real lesion's location, which is the only thing an override
+    # into the rule should ever be based on.
+    disagree_bg = [j for j in disagree if j["true_class"] == "background"]
+    disagree_real = [j for j in disagree if j["true_class"] != "background"]
+
+    def tally(subset):
+        r = sum(1 for j in subset if j["rule_prediction"] == j["true_class"])
+        c = sum(1 for j in subset if j["classifier_prediction"] == j["true_class"])
+        return r, c, len(subset) - r - c
+
+    print(f"\n  -- split by whether true_class is a real location or a "
+         f"segmentation hallucination --")
+    r, c, w = tally(disagree_real)
+    print(f"  REAL lesions ({len(disagree_real)} disagreements): "
+         f"rule right {r}, classifier right {c}, both wrong {w}")
+    r, c, w = tally(disagree_bg)
+    print(f"  BACKGROUND hallucinations ({len(disagree_bg)} disagreements): "
+         f"rule right {r} (structurally always 0), classifier right {c} "
+         f"(correctly called it junk), both wrong {w}")
+
     by_resolved = defaultdict(Counter)
-    for j in disagree:
+    for j in disagree_real:
         by_resolved[j["resolved_by"]]["total"] += 1
         if j["classifier_prediction"] == j["true_class"] and j["rule_prediction"] != j["true_class"]:
             by_resolved[j["resolved_by"]]["classifier_right_rule_wrong"] += 1
-    print(f"\n  classifier-correct-rule-wrong cases, by rule's resolved_by:")
+    print(f"\n  classifier-correct-rule-wrong cases on REAL lesions only, "
+         f"by rule's resolved_by (this, not the unsplit number above, is "
+         f"what should inform --override_resolved_by):")
     for rb, counts in sorted(by_resolved.items()):
         print(f"    {rb:<28} {counts['classifier_right_rule_wrong']:>3} / "
-             f"{counts['total']:>3} disagreements")
+             f"{counts['total']:>3} real-lesion disagreements")
 
     trivial_by_case = defaultdict(list)
     for j in joined:
