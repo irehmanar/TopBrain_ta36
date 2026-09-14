@@ -51,6 +51,7 @@ from tqdm import tqdm
 from topaneu_rsna import config as C
 from topaneu_rsna.utils import io as uio
 from topaneu_rsna.seg.assign_location_rule import load_binary_pred_paths, score
+from topaneu_rsna.seg.evaluate_official import official_score, print_official
 
 CATEGORICAL = ["vessel", "laterality", "resolved_by"]
 NUMERIC = ["size", "host_dist_mm", "arc_fraction", "is_orientable", "junction_dist_mm"]
@@ -116,6 +117,11 @@ def main():
                          "predicted_class, predicted_proba) -- needed to "
                          "join against the rule's own instances CSV for "
                          "the Experiment 3 hybrid comparison")
+    ap.add_argument("--official_metrics", action="store_true",
+                    help="also score with evaluate_official.py's replica of "
+                         "the TopAneu-26 grand-challenge Task 2 evaluator")
+    ap.add_argument("--official_out_csv", type=Path,
+                    default=C.LOG_ROOT / "task2_official_metrics_classifier.csv")
     a = ap.parse_args()
 
     spec = C.load_labels()
@@ -202,6 +208,11 @@ def main():
     cases_scored = sorted(set(preds) & set(gts))
     per_class, pooled_acc, n_components = score(cases_scored, preds, gts,
                                                 loc_value, spec.n_loc)
+
+    if a.official_metrics:
+        off_per_class, off_avg = official_score(cases_scored, preds, gts,
+                                                loc_value, spec.n_loc)
+        print_official(off_per_class, off_avg, len(cases_scored), out_csv=a.official_out_csv)
 
     def nanmean(idx):
         return float(np.nanmean([row[idx] for row in per_class.values()]))

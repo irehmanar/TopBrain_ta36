@@ -49,6 +49,7 @@ from scipy import ndimage
 from topaneu_rsna import config as C
 from topaneu_rsna.utils import io as uio
 from topaneu_rsna.seg.assign_location_rule import load_binary_pred_paths, score
+from topaneu_rsna.seg.evaluate_official import official_score, print_official
 
 
 def load_rows(path: Path) -> list[dict]:
@@ -74,7 +75,8 @@ def join_tables(rule_rows: list[dict], clf_rows: list[dict]) -> list[dict]:
     return joined
 
 
-def score_predictions(pred_by_case: dict, spec, loc_value: dict, a, label: str):
+def score_predictions(pred_by_case: dict, spec, loc_value: dict, a, label: str,
+                      official_out_csv=None):
     bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
     preds, gts = {}, {}
     for case, bp in bin_paths.items():
@@ -104,6 +106,12 @@ def score_predictions(pred_by_case: dict, spec, loc_value: dict, a, label: str):
     print(f"pooled per-component accuracy: {pooled_acc:.4f} over {n_components} instances")
     for i, k in enumerate(("dice", "vs", "hd95", "precision", "recall", "mcc")):
         print(f"  {k:<12}{nanmean(i):.4f}")
+
+    if a.official_metrics:
+        off_per_class, off_avg = official_score(cases_scored, preds, gts,
+                                                loc_value, spec.n_loc)
+        print_official(off_per_class, off_avg, len(cases_scored), out_csv=official_out_csv)
+
     return pooled_acc, {k: nanmean(i) for i, k in
                        enumerate(("dice", "vs", "hd95", "precision", "recall", "mcc"))}
 
@@ -125,6 +133,9 @@ def main():
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--out_csv", type=Path,
                     default=C.LOG_ROOT / "task2_hybrid_joined.csv")
+    ap.add_argument("--official_metrics", action="store_true",
+                    help="also score both hybrids with evaluate_official.py's "
+                         "replica of the TopAneu-26 grand-challenge Task 2 evaluator")
     a = ap.parse_args()
 
     spec = C.load_labels()
@@ -198,7 +209,8 @@ def main():
     for j in joined:
         trivial_by_case[j["case"]].append((j["instance_idx"], j["rule_prediction"]))
     score_predictions(trivial_by_case, spec, loc_value, a,
-                      "trivial hybrid (= rule alone, sanity check)")
+                      "trivial hybrid (= rule alone, sanity check)",
+                      official_out_csv=C.LOG_ROOT / "task2_official_metrics_trivial.csv")
 
     if a.override_resolved_by:
         override_by_case = defaultdict(list)
@@ -211,7 +223,8 @@ def main():
         score_predictions(override_by_case, spec, loc_value, a,
                           f"targeted-override hybrid "
                           f"(resolved_by in {a.override_resolved_by}, "
-                          f"proba>={a.override_proba_threshold})")
+                          f"proba>={a.override_proba_threshold})",
+                          official_out_csv=C.LOG_ROOT / "task2_official_metrics_override.csv")
     else:
         print("\n--override_resolved_by not given -- skipping the targeted-override "
              "hybrid (see the disagreement tabulation above to decide whether one "

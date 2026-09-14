@@ -116,6 +116,7 @@ from topaneu_rsna.utils import geometry as geo
 from topaneu_rsna.utils import io as uio
 from topaneu_rsna.utils import vessel_skeleton as vsk
 from topaneu_rsna.seg.evaluate_location import hd95
+from topaneu_rsna.seg.evaluate_official import official_score, print_official
 
 PRIOR_PATH = C.CODE_ROOT / "topaneu_rsna" / "vessel_location_prior.json"
 
@@ -404,6 +405,14 @@ def main():
                          "-- e.g. to check the actual junction-contact distance "
                          "behind a given resolved_by=junction correct hit before "
                          "picking --junction_tau_mm")
+    ap.add_argument("--official_metrics", action="store_true",
+                    help="also score with evaluate_official.py's replica of the "
+                         "TopAneu-26 grand-challenge Task 2 evaluator (harsher "
+                         "Dice/HD95, looser presence-based classification metrics "
+                         "-- a different convention from this script's own score(), "
+                         "not a rerun of the rule itself)")
+    ap.add_argument("--official_out_csv", type=Path,
+                    default=C.LOG_ROOT / "task2_official_metrics.csv")
     a = ap.parse_args()
 
     if a.vessel_source == "pred" and a.vessel_pred_dir is None:
@@ -477,6 +486,10 @@ def main():
         print(f"  per-instance diagnostics written to {a.instances_csv}")
 
     per_class, pooled_acc, n_components = score(cases, preds, gts, loc_value, spec.n_loc)
+
+    if a.official_metrics:
+        off_per_class, off_avg = official_score(cases, preds, gts, loc_value, spec.n_loc)
+        print_official(off_per_class, off_avg, len(cases), out_csv=a.official_out_csv)
 
     a.out_csv.parent.mkdir(parents=True, exist_ok=True)
     with open(a.out_csv, "w", newline="") as f:
