@@ -50,7 +50,8 @@ from tqdm import tqdm
 
 from topaneu_rsna import config as C
 from topaneu_rsna.utils import io as uio
-from topaneu_rsna.seg.assign_location_rule import load_binary_pred_paths, score
+from topaneu_rsna.seg.assign_location_rule import (
+    load_binary_pred_paths, oracle_binary_pred_paths, score)
 from topaneu_rsna.seg.evaluate_official import official_score, print_official
 
 CATEGORICAL = ["vessel", "laterality", "resolved_by"]
@@ -99,6 +100,12 @@ def main():
     ap.add_argument("--trainer", default=C.TRAINER_LOC)
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
+    ap.add_argument("--oracle_binary", action="store_true",
+                    help="use ground-truth LOCATION_MASKS (binarized) as a "
+                         "perfect binary detector for the repainting/scoring "
+                         "step -- MUST match whatever build_feature_table.py "
+                         "used to build the feature_csv given, or instance_idx "
+                         "won't correspond to the same voxel blobs")
     ap.add_argument("--rule_csv", type=Path, default=None,
                     help="optional rule per-class CSV (e.g. "
                          "task2_rule_assignment_final.csv) to print the "
@@ -179,7 +186,8 @@ def main():
         by_case[r["case"]].append((int(r["instance_idx"]), pred))
 
     loc_value = {loc: i + 1 for i, loc in enumerate(spec.locations)}
-    bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
+    bin_paths = (oracle_binary_pred_paths() if a.oracle_binary else
+                load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds))
 
     # Score every held-out case with a binary prediction, not just ones with
     # >=1 feature-table row -- a case where Dataset304 found nothing still

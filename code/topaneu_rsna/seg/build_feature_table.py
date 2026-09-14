@@ -47,7 +47,7 @@ from topaneu_rsna.utils import io as uio
 from topaneu_rsna.utils import vessel_skeleton as vsk
 from topaneu_rsna.seg.assign_location_rule import (
     PRIOR_PATH, build_vessel_to_locations, load_binary_pred_paths,
-    _junction_candidate, _arc_candidate)
+    oracle_binary_pred_paths, _junction_candidate, _arc_candidate)
 
 FIELDNAMES = ["case", "instance_idx", "vessel", "laterality", "size", "host_dist_mm",
              "resolved_by", "arc_fraction", "is_orientable",
@@ -82,6 +82,11 @@ def main():
     ap.add_argument("--trainer", default=C.TRAINER_LOC)
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
+    ap.add_argument("--oracle_binary", action="store_true",
+                    help="use ground-truth LOCATION_MASKS (binarized) as a "
+                         "perfect binary detector -- must match whatever "
+                         "train_learned_assigner.py/build_hybrid_assignment.py "
+                         "use for the same run, see oracle_binary_pred_paths()")
     ap.add_argument("--tau_mm", type=float, default=4.0)
     ap.add_argument("--junction_tau_mm", type=float, default=2.0)
     ap.add_argument("--junction_override_mm", type=float, default=1.5)
@@ -96,8 +101,12 @@ def main():
     prior = json.loads(a.prior.read_text())
     name_to_id = {v: i + 1 for i, v in enumerate(spec.vessels)}
 
-    bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
-    print(f"{len(bin_paths)} held-out binary predictions")
+    if a.oracle_binary:
+        bin_paths = oracle_binary_pred_paths()
+        print(f"{len(bin_paths)} ORACLE binary 'predictions' (ground-truth binarized)")
+    else:
+        bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
+        print(f"{len(bin_paths)} held-out binary predictions")
 
     rows = []
     for case, bp in tqdm(bin_paths.items(), desc="extracting features"):

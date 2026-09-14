@@ -134,6 +134,31 @@ def load_binary_pred_paths(dataset_id: int, trainer: str, plans: str, folds) -> 
     return out
 
 
+def oracle_binary_pred_paths() -> dict:
+    """Every case's own ground-truth LOCATION_MASKS file, used AS the
+    'binary prediction' -- i.e. a perfect binary detector (Dice=1.0, zero
+    false positives, zero false negatives). No new files are generated:
+    reading a LOCATION_MASKS file and thresholding it (`binmask = binmask
+    > 0`, done immediately after every uio.read(bp) call in this codebase)
+    already gives exactly the same array a purpose-made binary file would.
+
+    Ablation purpose: isolates how much of the whole pipeline's error comes
+    from the location-assignment logic (rule/classifier/hybrid) alone,
+    versus the real binary segmenter's own imperfections (~0.60 Dice, ~29%
+    of instances being pure false alarms -- see filter_background_fp.py).
+    Vessel anatomy is already an oracle (--vessel_source gt) throughout
+    this pipeline, so combining this with that isolates the *only*
+    remaining source of error to the location-assignment step itself.
+
+    IMPORTANT: if used for build_feature_table.py, it must ALSO be used for
+    train_learned_assigner.py's repainting step and build_hybrid_assignment.py's
+    scoring step for the SAME run -- all four derive `instance_idx` from
+    `ndimage.label(binmask)` on this exact array, so mixing an oracle run
+    with a real-model run breaks that correspondence silently."""
+    return {case: C.LOCATION_MASKS / f"{case}{C.LABEL_SUFFIX}"
+            for case in uio.list_cases(C.LOCATION_MASKS, C.LABEL_SUFFIX)}
+
+
 def build_vessel_to_locations(spec) -> dict[str, list[str]]:
     out = defaultdict(list)
     for loc, v in spec.location_to_vessel.items():
@@ -371,6 +396,14 @@ def main():
     ap.add_argument("--trainer", default=C.TRAINER_LOC)
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
+    ap.add_argument("--oracle_binary", action="store_true",
+                    help="use ground-truth LOCATION_MASKS (binarized) as a "
+                         "perfect binary detector instead of Dataset304's real "
+                         "prediction -- isolates location-assignment error from "
+                         "binary-segmentation error. See "
+                         "oracle_binary_pred_paths()'s docstring for the "
+                         "consistency requirement across build_feature_table.py/"
+                         "train_learned_assigner.py/build_hybrid_assignment.py.")
     ap.add_argument("--vessel_source", choices=["gt", "pred"], default="gt")
     ap.add_argument("--vessel_pred_dir", type=Path, default=None)
     ap.add_argument("--tau_mm", type=float, default=4.0,
@@ -427,9 +460,15 @@ def main():
     loc_value = {loc: i + 1 for i, loc in enumerate(spec.locations)}
     name_to_id = {v: i + 1 for i, v in enumerate(spec.vessels)}
 
-    bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
-    print(f"{len(bin_paths)} held-out binary predictions "
-         f"(Dataset{a.binary_dataset}, folds {a.folds})")
+    if a.oracle_binary:
+        bin_paths = oracle_binary_pred_paths()
+        print(f"{len(bin_paths)} ORACLE binary 'predictions' (ground-truth "
+             "LOCATION_MASKS binarized -- perfect detector, isolates "
+             "location-assignment error only)")
+    else:
+        bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
+        print(f"{len(bin_paths)} held-out binary predictions "
+             f"(Dataset{a.binary_dataset}, folds {a.folds})")
 
     preds, gts, all_instances = {}, {}, []
     for case, bp in tqdm(bin_paths.items(), desc="assigning"):

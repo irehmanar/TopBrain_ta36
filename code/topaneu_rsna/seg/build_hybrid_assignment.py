@@ -48,7 +48,8 @@ from scipy import ndimage
 
 from topaneu_rsna import config as C
 from topaneu_rsna.utils import io as uio
-from topaneu_rsna.seg.assign_location_rule import load_binary_pred_paths, score
+from topaneu_rsna.seg.assign_location_rule import (
+    load_binary_pred_paths, oracle_binary_pred_paths, score)
 from topaneu_rsna.seg.evaluate_official import official_score, print_official
 
 
@@ -77,7 +78,8 @@ def join_tables(rule_rows: list[dict], clf_rows: list[dict]) -> list[dict]:
 
 def score_predictions(pred_by_case: dict, spec, loc_value: dict, a, label: str,
                       official_out_csv=None):
-    bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
+    bin_paths = (oracle_binary_pred_paths() if a.oracle_binary else
+                load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds))
     preds, gts = {}, {}
     for case, bp in bin_paths.items():
         gt_p = C.LOCATION_MASKS / f"{case}{C.LABEL_SUFFIX}"
@@ -131,6 +133,11 @@ def main():
     ap.add_argument("--trainer", default=C.TRAINER_LOC)
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
+    ap.add_argument("--oracle_binary", action="store_true",
+                    help="use ground-truth LOCATION_MASKS (binarized) as a "
+                         "perfect binary detector for scoring -- MUST match "
+                         "whatever the joined rule/classifier CSVs were built "
+                         "with, or instance_idx won't line up")
     ap.add_argument("--out_csv", type=Path,
                     default=C.LOG_ROOT / "task2_hybrid_joined.csv")
     ap.add_argument("--official_metrics", action="store_true",
