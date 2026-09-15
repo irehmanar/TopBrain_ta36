@@ -223,7 +223,17 @@ SEG_FOLD = "all"
 # Focal(gamma=2, alpha=0.25)) on top of this pipeline's own proven anisotropic-
 # patch augmentation trainer -- see
 # code/rsna2025_1st_place/nnUNet/.../project_specific/rsna2025/expA_vessel_cond_seg.py
-TRAINER_EXPA_SEG = "RSNA2025Trainer_ExpA_VesselCondSeg"
+#
+# RSNA2025Trainer_ExpA_VesselCondSeg's first run (jobs 3107515/3109070, 80
+# epochs) collapsed to all-background (pseudo dice exactly 0.0/nan for all 52
+# classes, every epoch) -- the same collapse Dataset303 hit, for the same
+# reason: guaranteed-positive sampling alone doesn't fix per-class signal
+# sparsity across the whole training run, only within one patch. Pointing
+# this constant at the _ClassBalanced subclass instead, which adds
+# class_balanced_focal.py's own second, previously-proven lever
+# (case-level class-balanced sampling) on top -- see that class's own
+# docstring. The original class is kept, not deleted, for the record.
+TRAINER_EXPA_SEG = "RSNA2025Trainer_ExpA_VesselCondSeg_ClassBalanced"
 # Job 78's whole-head (never-before-run) Model 2 vessel prediction, used as
 # Dataset313's second input channel -- distinct from VESSEL_PRED_M2 above,
 # which is only ever computed on the coarse-ROI crop.

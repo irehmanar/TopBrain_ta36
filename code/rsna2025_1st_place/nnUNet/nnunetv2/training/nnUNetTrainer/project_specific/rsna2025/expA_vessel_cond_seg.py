@@ -217,3 +217,147 @@ class RSNA2025Trainer_ExpA_VesselCondSeg(RSNA2025Trainer_moreDAv6_1_SkeletonReca
         if self._fg_log_batches_remaining > 0:
             self._log_foreground_ratio(batch["target"])
         return super().train_step(batch)
+
+
+class RSNA2025Trainer_ExpA_VesselCondSeg_ClassBalanced(RSNA2025Trainer_ExpA_VesselCondSeg):
+    """
+    RSNA2025Trainer_ExpA_VesselCondSeg's first 80-epoch run (jobs 3107515/
+    3109070) collapsed to all-background: pseudo dice was exactly 0.0/nan for
+    every one of the 52 location classes across the entire run, never once
+    nonzero, and this held for even the most common classes, not just rare
+    ones -- guaranteed-positive sampling (oversample_foreground_percent=1.0)
+    only forces the sampled patch to CONTAIN some foreground voxel, it says
+    nothing about which of the 52 classes gets seen across the training run
+    as a whole, or how often. This is the exact collapse mode diagnosed for
+    Dataset303 (see config.py's DS_LOCATION comment): with do_bg=False, most
+    patches carry ground truth for at most one class, and MemoryEfficient
+    SoftDiceLoss/CE/TopK/Focal all average across all 52 channels jointly, so
+    a class that's rarely (or never) the one class present in a given batch
+    gets almost no gradient signal to escape "predict background" with.
+
+    class_balanced_focal.py's own postmortem on that exact collapse used TWO
+    independent levers together, not one: guaranteed-ish positive sampling
+    (there, only oversample_foreground_percent=0.66) AND case-level
+    class-balanced sampling (weighting which CASE gets drawn so a case whose
+    only lesion is a rare class isn't drowned out by cases with a common
+    one). This trainer keeps this experiment's oversample_foreground_percent
+    at 1.0 (per the task's own "every patch must contain a lesion" spec --
+    an even stronger version of that file's first lever) and adds the SECOND
+    lever verbatim from class_balanced_focal.py's own
+    _class_balanced_case_weights()/get_dataloaders() (already proven code in
+    this exact codebase, not reinvented here), rather than silently changing
+    what RSNA2025Trainer_ExpA_VesselCondSeg means after two jobs already ran
+    under that name.
+    """
+
+    def _class_balanced_case_weights(self, dataset_tr) -> np.ndarray:
+        from batchgenerators.utilities.file_and_folder_operations import join, load_pickle
+
+        all_labels = set(self.label_manager.foreground_labels)
+        case_classes = {}
+        class_case_count = {c: 0 for c in all_labels}
+
+        for key in dataset_tr.identifiers:
+            props = load_pickle(join(dataset_tr.source_folder, key + ".pkl"))
+            class_locations = props.get("class_locations", {}) or {}
+            present = {c for c in all_labels if c in class_locations and len(class_locations[c]) > 0}
+            case_classes[key] = present
+            for c in present:
+                class_case_count[c] += 1
+
+        default_weight = 1.0 / max(1, len(dataset_tr.identifiers))
+        weights = []
+        for key in dataset_tr.identifiers:
+            present = case_classes[key]
+            weights.append(default_weight if not present else max(1.0 / class_case_count[c] for c in present))
+
+        weights = np.asarray(weights, dtype=np.float64)
+        weights = weights / weights.sum()
+
+        n_classes_seen = sum(1 for c in all_labels if class_case_count[c] > 0)
+        self.print_to_log_file(
+            f"Class-balanced sampling: {n_classes_seen}/{len(all_labels)} of the location "
+            f"classes appear at least once in this fold's training split. Case weights range "
+            f"{weights.min():.2e} - {weights.max():.2e} (uniform would be {1.0 / len(weights):.2e})."
+        )
+        return weights
+
+    def get_dataloaders(self):
+        """
+        Copy of nnUNetTrainerSkeletonRecall.get_dataloaders() (NOT the plain
+        nnUNetTrainer base -- this trainer's inherited train_step/
+        validation_step require the "skel" key only nnUNetDataLoader2DSkel/
+        3DSkel's generate_train_batch() produces). The only change from that
+        original, same as class_balanced_focal.py's own copy: the training
+        loader gets class-balanced sampling_probabilities instead of None.
+        """
+        from batchgenerators.dataloading.nondet_multi_threaded_augmenter import NonDetMultiThreadedAugmenter
+        from batchgenerators.dataloading.single_threaded_augmenter import SingleThreadedAugmenter
+        from nnunetv2.training.dataloading.data_loader_2d_skel import nnUNetDataLoader2DSkel
+        from nnunetv2.training.dataloading.data_loader_3d_skel import nnUNetDataLoader3DSkel
+        from nnunetv2.training.dataloading.nnunet_dataset import infer_dataset_class
+        from nnunetv2.utilities.default_n_proc_DA import get_allowed_n_proc_DA
+
+        if self.dataset_class is None:
+            self.dataset_class = infer_dataset_class(self.preprocessed_dataset_folder)
+
+        patch_size = self.configuration_manager.patch_size
+        dim = len(patch_size)
+        deep_supervision_scales = self._get_deep_supervision_scales()
+
+        (
+            rotation_for_DA,
+            do_dummy_2d_data_aug,
+            initial_patch_size,
+            mirror_axes,
+        ) = self.configure_rotation_dummyDA_mirroring_and_inital_patch_size()
+
+        tr_transforms = self.get_training_transforms(
+            patch_size, rotation_for_DA, deep_supervision_scales, mirror_axes, do_dummy_2d_data_aug,
+            use_mask_for_norm=self.configuration_manager.use_mask_for_norm,
+            is_cascaded=self.is_cascaded, foreground_labels=self.label_manager.foreground_labels,
+            regions=self.label_manager.foreground_regions if self.label_manager.has_regions else None,
+            ignore_label=self.label_manager.ignore_label)
+
+        val_transforms = self.get_validation_transforms(
+            deep_supervision_scales, is_cascaded=self.is_cascaded,
+            foreground_labels=self.label_manager.foreground_labels,
+            regions=self.label_manager.foreground_regions if self.label_manager.has_regions else None,
+            ignore_label=self.label_manager.ignore_label)
+
+        dataset_tr, dataset_val = self.get_tr_and_val_datasets()
+
+        train_sampling_probabilities = self._class_balanced_case_weights(dataset_tr)
+
+        loader_cls = nnUNetDataLoader2DSkel if dim == 2 else nnUNetDataLoader3DSkel
+        dl_tr = loader_cls(dataset_tr, self.batch_size,
+                           initial_patch_size,
+                           self.configuration_manager.patch_size,
+                           self.label_manager,
+                           oversample_foreground_percent=self.oversample_foreground_percent,
+                           sampling_probabilities=train_sampling_probabilities, pad_sides=None,
+                           transforms=tr_transforms)
+        dl_val = loader_cls(dataset_val, self.batch_size,
+                            self.configuration_manager.patch_size,
+                            self.configuration_manager.patch_size,
+                            self.label_manager,
+                            oversample_foreground_percent=self.oversample_foreground_percent,
+                            sampling_probabilities=None, pad_sides=None, transforms=val_transforms)
+
+        allowed_num_processes = get_allowed_n_proc_DA()
+        if allowed_num_processes == 0:
+            mt_gen_train = SingleThreadedAugmenter(dl_tr, None)
+            mt_gen_val = SingleThreadedAugmenter(dl_val, None)
+        else:
+            mt_gen_train = NonDetMultiThreadedAugmenter(data_loader=dl_tr, transform=None,
+                                                        num_processes=allowed_num_processes,
+                                                        num_cached=max(6, allowed_num_processes // 2), seeds=None,
+                                                        pin_memory=self.device.type == "cuda", wait_time=0.002)
+            mt_gen_val = NonDetMultiThreadedAugmenter(data_loader=dl_val,
+                                                      transform=None, num_processes=max(1, allowed_num_processes // 2),
+                                                      num_cached=max(3, allowed_num_processes // 4), seeds=None,
+                                                      pin_memory=self.device.type == "cuda",
+                                                      wait_time=0.002)
+        _ = next(mt_gen_train)
+        _ = next(mt_gen_val)
+        return mt_gen_train, mt_gen_val
