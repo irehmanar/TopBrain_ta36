@@ -165,6 +165,25 @@ DS_ANEURYSM_FINE_VESSEL = 311   # Dataset311_TopAneuAneurysmFineVessel
 # per-case grid, built by seg/build_location_conditioned_dataset.py
 # --source gt_vessel. See jobs/14_segmentation_gtvessel_52class.
 DS_LOCATION_GTVESSEL    = 312   # Dataset312_TopAneuLocationGTVessel
+# [TOPANEU] Experiment A: Vessel-Aware Multi-Task Segmentation (Tapar, TopAneu
+# 2026), adapted to this pipeline as a DECOUPLED two-model design rather than
+# the paper's single joint dual-head network -- see jobs/29_expA_vessel_cond_seg's
+# docstrings for the full rationale. This dataset is the SEGMENTATION half only
+# (Task 2, 53-class = background + 52 locations), whole-head, native per-case
+# grid, two input channels:
+#   ch0 = raw image (IMAGES_DIR)
+#   ch1 = Model 2's own 36-class vessel prediction, run whole-head for the
+#         first time in this pipeline (every prior use of Model 2 was on a
+#         coarse-ROI crop or was the oracle ground truth) -- see
+#         seg/build_expA_vessel_cond_dataset.py and jobs/29's job 78.
+# label = LOCATION_MASKS (52 classes + background), whole-head
+# A fixed ~15% holdout (EXPA_HOLDOUT_JSON) is excluded from imagesTr/labelsTr
+# entirely so this dataset's fold_all training still has one honest,
+# never-trained-on set to evaluate on -- the paper's real center/modality-
+# stratified 5-fold CV was judged too expensive for a 1-week budget (see the
+# same jobs' docstrings), so fold_all + a manual holdout replaces it here,
+# the same tradeoff already made for Models 1/2/3.
+DS_VESSELCOND_SEG = 313   # Dataset313_TopAneuVesselCondSeg
 DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm",
            DS_ANEURYSM_ROI: "TopAneuAneurysmROI",
@@ -174,7 +193,8 @@ DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_ANEURYSM_COARSE: "TopAneuAneurysmCoarse",
            DS_ANEURYSM_FINE_RAW: "TopAneuAneurysmFineRaw",
            DS_ANEURYSM_FINE_VESSEL: "TopAneuAneurysmFineVessel",
-           DS_LOCATION_GTVESSEL: "TopAneuLocationGTVessel"}
+           DS_LOCATION_GTVESSEL: "TopAneuLocationGTVessel",
+           DS_VESSELCOND_SEG: "TopAneuVesselCondSeg"}
 
 PLANS_RESENC = "nnUNetResEncUNetMPlans"
 # trainers bundled in the author's nnUNet fork
@@ -197,6 +217,30 @@ TRAINER_M3 = "RSNA2025Trainer_moreDAv6_SkeletonRecallW3TverskyBeta07"
 # existing ROI classifier (job 7), not by this segmentation model.
 TRAINER_LOC = TRAINER_M2
 SEG_FOLD = "all"
+
+# [TOPANEU] Experiment A (see DS_VESSELCOND_SEG above): custom trainer
+# implementing the paper's Sect 2.3 Stage-1 loss (Dice + CE + TopK(10%) +
+# Focal(gamma=2, alpha=0.25)) on top of this pipeline's own proven anisotropic-
+# patch augmentation trainer -- see
+# code/rsna2025_1st_place/nnUNet/.../project_specific/rsna2025/expA_vessel_cond_seg.py
+TRAINER_EXPA_SEG = "RSNA2025Trainer_ExpA_VesselCondSeg"
+# Job 78's whole-head (never-before-run) Model 2 vessel prediction, used as
+# Dataset313's second input channel -- distinct from VESSEL_PRED_M2 above,
+# which is only ever computed on the coarse-ROI crop.
+VESSEL_PRED_M2_FULLHEAD = WORK / "vessel_pred_m2_fullhead"
+# Deterministic ~15% case holdout, generated once by seg/build_expA_holdout.py
+# and then reused unchanged by every later Experiment A job (dataset build,
+# classifier training, consensus-fusion evaluation) -- same
+# generated-artifact-under-code-root convention as PRIOR_PATH below.
+EXPA_HOLDOUT_JSON = CODE_ROOT / "topaneu_rsna" / "expA_holdout_cases.json"
+EXPA_HOLDOUT_FRAC = 0.15
+# Cached per-case global-average-pooled encoder features (frozen Dataset313
+# backbone), used to train Experiment A's small classification head without
+# re-running the (expensive, whole-volume) encoder forward pass every epoch.
+EXPA_FEATURE_CACHE = WORK / "expA_features"
+# Job 83's TTA segmentation predictions on the holdout cases only (nnU-Net's
+# own -o output dir), read back by seg/expA_consensus_fusion.py.
+EXPA_SEG_PRED_HOLDOUT = WORK / "expA_seg_pred_holdout"
 
 
 def seg_model_dir(ds_id: int, trainer: str) -> Path:
