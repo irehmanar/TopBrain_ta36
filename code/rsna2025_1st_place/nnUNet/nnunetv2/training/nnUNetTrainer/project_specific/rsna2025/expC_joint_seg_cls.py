@@ -219,17 +219,25 @@ class RSNA2025Trainer_ExpC_JointSegCls(RSNA2025Trainer_moreDAv6_1_SkeletonRecall
     def __init__(self, plans: dict, configuration: str, fold, dataset_json: dict,
                 device: torch.device = torch.device("cuda")):
         super().__init__(plans, configuration, fold, dataset_json, device)
-        # Raised from 200 to 1000 (job 99's first 28 epochs already showed
-        # Branch A learning steadily, Branch B's train loss still flat --
-        # matches the same "needs more time" pattern Experiment A's job 87
-        # hit, so given the same generous budget rather than judging Branch B
-        # on only 14% of a 200-epoch run). Bumped BEFORE job 99 reached
-        # completion (only 28/200 epochs done, ~1.5h of compute) -- cheaper
-        # to restart fresh at num_epochs=1000 from epoch 0 than to let it
-        # finish at 200 and then have to resume with a corrected initial_lr
-        # the way Experiment A's job 87->100 needed (see that trainer's own
-        # comment on why a naive resume re-warms the LR schedule).
+        # Raised from 200 to 1000. Job 99 actually ran to full completion
+        # (200/200 epochs, not killed early as originally planned) --
+        # Branch A binary_dice converged to a real, stable 0.6-0.75, and
+        # Branch B cls_accuracy improved from ~5.9% avg (epochs 0-27) to
+        # ~10.5% avg (epochs 174-199), a genuine if modest upward trend,
+        # not a plateau. Given that real progress, job 102 RESUMES from
+        # job 99's completed checkpoint via --c rather than restarting from
+        # epoch 0 (unlike the earlier plan, back when only 28/200 epochs
+        # were expected to be sunk cost).
         self.num_epochs = 1000
+        # Same fix Experiment A's job 87->100 needed: PolyLRScheduler
+        # computes LR purely from current_epoch/num_epochs, so resuming a
+        # FINISHED 200-epoch run (LR decayed to ~8e-05 by the end) against a
+        # NEW num_epochs=1000 would see current_epoch=200 as only 20% through
+        # and push LR back up toward ~0.008 -- large enough to disrupt
+        # Branch A's already-converged 0.6-0.75 dice. Lowered to roughly the
+        # same order of magnitude Experiment A's own resume used, well below
+        # where job 99's schedule would otherwise re-warm to.
+        self.initial_lr = 5e-4
         self.save_every = 5
         self.oversample_foreground_percent = 1.0
         self.weight_seg = 1.0
