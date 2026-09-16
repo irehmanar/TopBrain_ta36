@@ -57,6 +57,17 @@ def main():
                          "(auto-detection matches any prefix ending in "
                          "'stem.convs.0.conv.weight' or "
                          "'stem.convs.0.all_modules.0.weight')")
+    ap.add_argument("--key_prefix", default="",
+                    help="prepend this string to every checkpoint key after channel "
+                         "expansion -- needed when the target trainer wraps the stock "
+                         "network as a submodule (e.g. Experiment C's DualHeadNetwork "
+                         "holds it as `self.seg_network`, so every key like "
+                         "'encoder.stem...' must become 'seg_network.encoder.stem...' "
+                         "to match nnU-Net's own strict key-name loader -- otherwise "
+                         "every key silently fails to match and the warm start never "
+                         "actually applies). Leave empty (default) for a trainer whose "
+                         "network IS the stock network directly, unchanged behavior for "
+                         "every existing caller of this script.")
     a = ap.parse_args()
 
     ckpt = torch.load(a.in_ckpt, map_location="cpu", weights_only=False)
@@ -77,6 +88,10 @@ def main():
         pad = torch.zeros((out_ch, a.extra_channels, *k), dtype=w.dtype)
         weights[key] = torch.cat([w, pad], dim=1)
         print(f"{key}: {tuple(w.shape)} -> {tuple(weights[key].shape)}")
+
+    if a.key_prefix:
+        ckpt["network_weights"] = {a.key_prefix + k: v for k, v in weights.items()}
+        print(f"prefixed all {len(weights)} keys with {a.key_prefix!r}")
 
     a.out_ckpt.parent.mkdir(parents=True, exist_ok=True)
     torch.save(ckpt, a.out_ckpt)
