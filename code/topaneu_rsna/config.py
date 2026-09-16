@@ -252,6 +252,33 @@ EXPA_FEATURE_CACHE = WORK / "expA_features"
 # own -o output dir), read back by seg/expA_consensus_fusion.py.
 EXPA_SEG_PRED_HOLDOUT = WORK / "expA_seg_pred_holdout"
 
+# [TOPANEU] Experiment B: standalone 3D crop classifier, completely
+# independent of nnU-Net's training machinery and of Experiment A's
+# (abandoned after its own collapse) segmentation attempt. Assigns each
+# REAL, non-oracle predicted aneurysm instance (Dataset304's pooled 5-fold
+# binary prediction, connected-component per instance) to one of 52
+# locations + background, using a 3-channel crop (raw image, that same real
+# binary channel, job 78's real whole-head Model 2 vessel channel) centered
+# on the PREDICTED instance's own centroid -- not a ground-truth instance's
+# centroid, which would create a train/inference distribution mismatch (see
+# seg/build_expB_crop_dataset.py's own module docstring). Ground truth is
+# used ONLY to look up each predicted instance's true label via overlap,
+# exactly like assign_location_rule.py's own true_class field -- never as an
+# input channel or as the basis for where/what gets cropped.
+#
+# Train/val split: reuses Dataset304's own real fold assignment (which
+# fold's `validation/` directory a case's file appears under -- the same
+# signal load_binary_pred_paths already relies on) rather than inventing a
+# new split. EXPB_VAL_FOLD is held out entirely for evaluation; the other 4
+# folds' cases are training data. A single fixed split, not a full 5-fold
+# retrain, given this pipeline's time budget -- same class of tradeoff
+# already made for Experiment A's fold_all + manual holdout.
+EXPB_VAL_FOLD = 4
+EXPB_CROP_CACHE = WORK / "expB_crops"                      # cached .npz crops, one per instance
+EXPB_MANIFEST_CSV = LOG_ROOT / "task2_expB_crop_manifest.csv"
+EXPB_CKPT_DIR = WORK / "expB_classifier"
+EXPB_PREDICTIONS_CSV = LOG_ROOT / "task2_expB_classifier_predictions.csv"
+
 
 def seg_model_dir(ds_id: int, trainer: str) -> Path:
     return (nnUNet_results / f"Dataset{ds_id:03d}_{DS_NAMES[ds_id]}"
