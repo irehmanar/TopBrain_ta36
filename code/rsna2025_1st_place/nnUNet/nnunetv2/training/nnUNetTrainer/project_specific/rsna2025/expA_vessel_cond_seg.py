@@ -250,6 +250,23 @@ class RSNA2025Trainer_ExpA_VesselCondSeg_ClassBalanced(RSNA2025Trainer_ExpA_Vess
     under that name.
     """
 
+    def __init__(self, plans: dict, configuration: str, fold, dataset_json: dict,
+                device: torch.device = torch.device("cuda")):
+        super().__init__(plans, configuration, fold, dataset_json, device)
+        # Job 87 (this exact class, 80 epochs) broke the all-background
+        # collapse but only reached one class in that time (pseudo dice
+        # nonzero for a single class by epoch 73-79, all other 51 classes
+        # still 0.0/nan) -- 80 epochs simply wasn't enough gradient exposure
+        # for the rest. Raised to 1000 (job 20/66's own precedent for "give
+        # a full-res 3D run a generous budget when time allows," not picked
+        # arbitrarily) so job 94 can resume via nnU-Net's own -c flag
+        # straight from job 87's epoch-80 checkpoint instead of restarting
+        # those 80 already-completed epochs from scratch -- -c restores
+        # current_epoch from the checkpoint but takes num_epochs fresh from
+        # this __init__, exactly the mechanism job 66 already relied on for
+        # the same kind of walltime-limited continuation.
+        self.num_epochs = 1000
+
     def _class_balanced_case_weights(self, dataset_tr) -> np.ndarray:
         from batchgenerators.utilities.file_and_folder_operations import join, load_pickle
 
