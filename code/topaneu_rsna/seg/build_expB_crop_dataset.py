@@ -121,10 +121,42 @@ def gt_extent_stats(cases: list[str]) -> tuple[np.ndarray, np.ndarray]:
     return np.array(extents_vox), np.array(extents_mm)
 
 
+def network_divisibility(dataset_id: int = None) -> np.ndarray:
+    """Per-axis total downsampling factor (product of strides across every
+    stage) of Dataset304's own ResEncUNetM encoder -- the crop size MUST be
+    an exact multiple of this per axis, or a residual block's skip
+    connection and main path round to different spatial sizes and crash
+    with a shape mismatch (RuntimeError: size of tensor a (6) must match
+    size of tensor b (5) ... -- exactly what an earlier, naive 'round to
+    nearest 8' heuristic hit here: this architecture's actual per-axis
+    factor is NOT simply 8, and guessing a rounding granularity instead of
+    reading it from the architecture is exactly how that bug happened).
+    Reads Dataset304's own plans.json since that is the encoder this
+    experiment warm-starts from and must stay shape-compatible with."""
+    import json
+    dataset_id = dataset_id or C.DS_ANEURYSM
+    model_dir = C.seg_model_dir(dataset_id, C.TRAINER_LOC)
+    plans = json.loads((model_dir / "plans.json").read_text())
+    strides = plans["configurations"]["3d_fullres"]["architecture"]["arch_kwargs"]["strides"]
+    factor = np.ones(len(strides[0]), dtype=np.int64)
+    for s in strides:
+        factor *= np.asarray(s, dtype=np.int64)
+    return factor
+
+
 def pick_crop_size(extents_vox: np.ndarray, margin_factor: float = 2.0,
-                   min_size: int = 32, max_size: int = 96) -> tuple[int, int, int]:
+                   min_size: int = 32, max_size: int = 128) -> tuple[int, int, int]:
+    divisor = network_divisibility()
     p95 = np.percentile(extents_vox, 95, axis=0)
-    size = np.clip(np.ceil(p95 * margin_factor / 8) * 8, min_size, max_size).astype(int)
+    raw = np.clip(p95 * margin_factor, min_size, max_size)
+    size = np.ceil(raw / divisor) * divisor          # round UP to a valid multiple, per axis --
+                                                     # correctness (must be shape-compatible with
+                                                     # the encoder) takes priority over hitting
+                                                     # max_size exactly if those two ever conflict
+    if np.any(size > max_size):
+        print(f"[warn] per-axis divisibility ({divisor.tolist()}) pushed crop size to "
+             f"{size.astype(int).tolist()}, past the requested max_size={max_size} -- "
+             f"kept as-is since a shape-incompatible smaller crop would crash training.")
     return tuple(int(s) for s in size)
 
 
