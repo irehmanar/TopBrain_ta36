@@ -259,13 +259,26 @@ class RSNA2025Trainer_ExpA_VesselCondSeg_ClassBalanced(RSNA2025Trainer_ExpA_Vess
         # still 0.0/nan) -- 80 epochs simply wasn't enough gradient exposure
         # for the rest. Raised to 1000 (job 20/66's own precedent for "give
         # a full-res 3D run a generous budget when time allows," not picked
-        # arbitrarily) so job 94 can resume via nnU-Net's own -c flag
-        # straight from job 87's epoch-80 checkpoint instead of restarting
-        # those 80 already-completed epochs from scratch -- -c restores
-        # current_epoch from the checkpoint but takes num_epochs fresh from
-        # this __init__, exactly the mechanism job 66 already relied on for
-        # the same kind of walltime-limited continuation.
+        # arbitrarily) so job 94 can resume via nnU-Net's own --c flag
+        # (note: double-dash -- job 94's first attempt used single-dash -c,
+        # which this fork's argparse never registers, so it silently trained
+        # fresh from epoch 0 instead of resuming -- see run_training.py's own
+        # `parser.add_argument("--c", ...)`) straight from job 87's epoch-80
+        # checkpoint instead of restarting those 80 already-completed epochs.
         self.num_epochs = 1000
+        # configure_optimizers() builds PolyLRScheduler(optimizer, initial_lr,
+        # num_epochs) -- purely a function of current_epoch/num_epochs. Even
+        # with --c correctly restoring current_epoch=80, computing that
+        # fraction against the NEW num_epochs=1000 (only 8% through) pushes
+        # the LR back up near its original peak (0.01), which would likely
+        # wash out the one fragile, low-LR-dependent class job 87 had just
+        # gotten to learn -- the same failure job 94's botched restart
+        # actually demonstrated by accident. Lowering initial_lr to roughly
+        # where job 87's own decay had already reached by epoch 80 (its last
+        # printed LR was in the 1e-4-5e-4 range) keeps a resumed run in the
+        # same low, stable regime instead of re-warming it, while still
+        # decaying gently over the remaining ~920 epochs.
+        self.initial_lr = 5e-4
 
     def _class_balanced_case_weights(self, dataset_tr) -> np.ndarray:
         from batchgenerators.utilities.file_and_folder_operations import join, load_pickle
