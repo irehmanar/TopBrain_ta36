@@ -219,7 +219,17 @@ class RSNA2025Trainer_ExpC_JointSegCls(RSNA2025Trainer_moreDAv6_1_SkeletonRecall
     def __init__(self, plans: dict, configuration: str, fold, dataset_json: dict,
                 device: torch.device = torch.device("cuda")):
         super().__init__(plans, configuration, fold, dataset_json, device)
-        self.num_epochs = 200
+        # Raised from 200 to 1000 (job 99's first 28 epochs already showed
+        # Branch A learning steadily, Branch B's train loss still flat --
+        # matches the same "needs more time" pattern Experiment A's job 87
+        # hit, so given the same generous budget rather than judging Branch B
+        # on only 14% of a 200-epoch run). Bumped BEFORE job 99 reached
+        # completion (only 28/200 epochs done, ~1.5h of compute) -- cheaper
+        # to restart fresh at num_epochs=1000 from epoch 0 than to let it
+        # finish at 200 and then have to resume with a corrected initial_lr
+        # the way Experiment A's job 87->100 needed (see that trainer's own
+        # comment on why a naive resume re-warms the LR schedule).
+        self.num_epochs = 1000
         self.save_every = 5
         self.oversample_foreground_percent = 1.0
         self.weight_seg = 1.0
