@@ -240,6 +240,23 @@ class RSNA2025Trainer_ExpC_JointSegCls(RSNA2025Trainer_moreDAv6_1_SkeletonRecall
         encoder_channels = int(seg_network.encoder.output_channels[-1])
         return DualHeadNetwork(seg_network, encoder_channels, n_cls_classes=N_LOC)
 
+    def set_deep_supervision_enabled(self, enabled: bool):
+        """Stock nnUNetTrainer's own version (its own docstring: 'this
+        function is specific for the default architecture ... if you change
+        the architecture, there are chances you need to change this as
+        well') does `mod.decoder.deep_supervision = enabled` where `mod` is
+        self.network directly -- true for the inner seg_network, not for
+        DualHeadNetwork, which holds it as self.seg_network. Same DDP/
+        torch.compile unwrapping as stock, just redirected one level in."""
+        from torch._dynamo import OptimizedModule
+        if self.is_ddp:
+            mod = self.network.module
+        else:
+            mod = self.network
+        if isinstance(mod, OptimizedModule):
+            mod = mod._orig_mod
+        mod.seg_network.decoder.deep_supervision = enabled
+
     def _build_loss(self):
         loss_seg = BinaryCollapsedDiceCE()
         if self.enable_deep_supervision:
