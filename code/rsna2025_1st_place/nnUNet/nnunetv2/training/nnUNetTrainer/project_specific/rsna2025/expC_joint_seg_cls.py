@@ -89,6 +89,8 @@ per-class validation classification accuracy trending up, not this fraction.
 """
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -250,6 +252,8 @@ class RSNA2025Trainer_ExpC_JointSegCls(RSNA2025Trainer_moreDAv6_1_SkeletonRecall
 
     def initialize(self):
         super().initialize()
+        self._load_pretrained_seg_weights()
+
         class_counts = self._count_training_classes()
         weights = effective_number_weights(class_counts)
         self.loss_cls = nn.CrossEntropyLoss(weight=torch.from_numpy(weights).to(self.device))
@@ -257,6 +261,40 @@ class RSNA2025Trainer_ExpC_JointSegCls(RSNA2025Trainer_moreDAv6_1_SkeletonRecall
             f"[expC] classification class weights (effective-number, beta=0.999): "
             f"{class_counts.astype(int).tolist()} training-case counts -> "
             f"weight range {weights.min():.3f}-{weights.max():.3f}")
+
+    def _load_pretrained_seg_weights(self):
+        """Deliberately NOT using nnU-Net's own -pretrained_weights CLI flag:
+        that mechanism (nnunetv2/run/load_pretrained_weights.py) hard-asserts
+        every key in the network (besides .seg_layers.) already exists in the
+        checkpoint -- correct for every other trainer in this codebase (same
+        architecture, just a channel-count change), but cls_head is a
+        genuinely NEW submodule with no counterpart in a segmentation-only
+        checkpoint, so that assertion can never pass for this network. Loads
+        directly into self.network.seg_network (the inner stock architecture,
+        no 'seg_network.' key prefix needed here since we're addressing that
+        submodule directly, not the outer wrapper) with strict=False instead
+        -- the same lenient pattern cls/backbone.py's NnUNetTruncatedBackbone
+        and expB_train_classifier.py's build_model() already use successfully
+        for exactly this kind of partial-checkpoint warm start. cls_head
+        stays randomly initialized, as it should -- it's new, not something
+        this checkpoint could ever have an answer for."""
+        ckpt_path = os.environ.get("EXPC_PRETRAINED_SEG_CKPT")
+        if not ckpt_path:
+            self.print_to_log_file("[expC] EXPC_PRETRAINED_SEG_CKPT not set -- "
+                                   "training seg_network from random init, no warm start.")
+            return
+        state = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        weights = state.get("network_weights", state)
+        weights = {k: v for k, v in weights.items() if not k.startswith("decoder.seg_layers.")}
+        missing, unexpected = self.network.seg_network.load_state_dict(weights, strict=False)
+        self.print_to_log_file(
+            f"[expC] warm-started seg_network from {ckpt_path}: "
+            f"missing={len(missing)} unexpected={len(unexpected)} "
+            f"(missing should be ~0 -- cls_head is a separate submodule, not part of "
+            f"seg_network, so it never appears here at all)")
+        if len(missing) > 20:
+            raise RuntimeError("Too many missing keys warm-starting seg_network -- "
+                               "checkpoint architecture doesn't match Dataset313's plans.json.")
 
     def _count_training_classes(self) -> np.ndarray:
         from batchgenerators.utilities.file_and_folder_operations import join, load_pickle
