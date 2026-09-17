@@ -279,6 +279,25 @@ EXPB_MANIFEST_CSV = LOG_ROOT / "task2_expB_crop_manifest.csv"
 EXPB_CKPT_DIR = WORK / "expB_classifier"
 EXPB_PREDICTIONS_CSV = LOG_ROOT / "task2_expB_classifier_predictions.csv"
 
+# [TOPANEU] Experiment Alpha: INFERENCE-ONLY ablation on Dataset304's already-trained
+# real 5-fold binary aneurysm model (job 13) -- (1) cross-fold ensembling, (2)
+# test-time mirroring augmentation on/off, (3) connected-component volume-threshold
+# postprocessing. Dataset304's training is never touched. See
+# jobs/33_expAlpha_binary_postproc.
+#
+# IMPORTANT caveat (see that job's README): Dataset304 was trained with a real 5-fold
+# CV over the FULL case pool, with no case held out of all 5 folds. That means every
+# case is training data for 4 of the 5 folds and validation data for exactly 1. A
+# fold-ensembled prediction on any of these cases is therefore NOT an honest unseen-
+# data estimate for 4/5 of its own ensemble members -- there is no subset of cases in
+# this pipeline that was never used to train ANY of Dataset304's 5 folds. The
+# single-fold (own validation fold only) TTA-on/off comparison and the postprocessing
+# sweep are NOT affected by this (each case is still scored only by the one fold that
+# never trained on it), only the cross-fold ENSEMBLE number is; that step's own script
+# labels its result accordingly rather than silently reporting a leaked/inflated Dice.
+EXPALPHA_PRED_DIR = WORK / "expAlpha_binary_pred"                 # notta/, ensemble5/, postproc_best/
+EXPALPHA_RESULTS_CSV = LOG_ROOT / "task2_expAlpha_binary_results.csv"
+
 
 def seg_model_dir(ds_id: int, trainer: str) -> Path:
     return (nnUNet_results / f"Dataset{ds_id:03d}_{DS_NAMES[ds_id]}"
