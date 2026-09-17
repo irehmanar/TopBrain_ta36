@@ -47,12 +47,25 @@ def evaluate(pred_by_case: dict, gt_dir: Path):
     tp = fp = fn = tn = 0
     per_case_dice = []
 
+    n_shape_mismatch = 0
     for case, pp in tqdm(sorted(pred_by_case.items()), desc="scoring"):
         gp = gt_dir / f"{case}{C.LABEL_SUFFIX}"
         if not gp.exists():
             continue
         pred, _ = uio.read(pp)
         gt, _ = uio.read(gp)
+        if pred.shape != gt.shape:
+            # Seen in practice: a handful of cases in Dataset304's raw
+            # labelsTr/imagesTr had a stale/corrupted file from an unrelated
+            # ROI-cropped experiment sitting where a native-shape whole-head
+            # file should be. Skip and warn rather than crash the whole
+            # evaluation over one bad case -- but a shape mismatch is never
+            # silently ignorable, so it's still counted and reported.
+            print(f"[WARNING] shape mismatch for {case}: pred={pred.shape} "
+                 f"gt={gt.shape} -- skipping this case, investigate its raw "
+                 f"files (see jobs/33_expAlpha_binary_postproc's known issue).")
+            n_shape_mismatch += 1
+            continue
         pm, gm = pred > 0, gt > 0
         pn, gn = int(pm.sum()), int(gm.sum())
         it = int((pm & gm).sum())
@@ -75,6 +88,11 @@ def evaluate(pred_by_case: dict, gt_dir: Path):
         else:
             per_case_dice.append(2 * it / (pn + gn))
 
+    if n_shape_mismatch:
+        print(f"[WARNING] {n_shape_mismatch} case(s) skipped for a pred/gt shape "
+             f"mismatch -- see warnings above. Metrics below are computed over "
+             f"the remaining cases only, NOT silently padded or assumed correct.")
+
     per_case_dice = np.asarray(per_case_dice)
     with np.errstate(invalid="ignore", divide="ignore"):
         pooled_dice = 2 * inter / (pred_sum + gt_sum) if (pred_sum + gt_sum) else float("nan")
@@ -83,6 +101,7 @@ def evaluate(pred_by_case: dict, gt_dir: Path):
         recall = tp / (tp + fn) if (tp + fn) else float("nan")
 
     return dict(
+        n_shape_mismatch=n_shape_mismatch,
         n_cases=len(per_case_dice),
         pooled_dice=pooled_dice, pooled_iou=pooled_iou,
         precision=precision, recall=recall,

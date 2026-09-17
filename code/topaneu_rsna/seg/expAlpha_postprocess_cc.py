@@ -92,6 +92,14 @@ def evaluate_masks_in_memory(masks: dict, gt_dir: Path):
         if not gp.exists():
             continue
         gt, _ = uio.read(gp)
+        if pm.shape != gt.shape:
+            # Same known issue as expAlpha_evaluate_variants.py's evaluate() --
+            # a handful of Dataset304 raw files had a stale ROI-cropped-shape
+            # file where a native whole-head shape should be. Skip rather than
+            # crash the whole threshold sweep over one bad case.
+            print(f"[WARNING] shape mismatch for {case}: pred={pm.shape} "
+                 f"gt={gt.shape} -- skipping.")
+            continue
         gm = gt > 0
         pm_b = pm > 0
         pn, gn = int(pm_b.sum()), int(gm.sum())

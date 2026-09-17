@@ -95,15 +95,26 @@ def run_ensemble5(dataset_id: int, trainer: str, plans: str):
     out_dir = C.EXPALPHA_PRED_DIR / "ensemble5"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    n_cases = len(uio.list_cases(images_dir, C.IMAGE_SUFFIX))
-    print(f"[expAlpha] ensembling folds 0-4 (TTA on, default) over all {n_cases} "
+    cases = uio.list_cases(images_dir, C.IMAGE_SUFFIX)
+    print(f"[expAlpha] ensembling folds 0-4 (TTA on, default) over all {len(cases)} "
           f"cases -- see config.py's EXPALPHA_PRED_DIR docstring: this is a leaked/"
           f"optimistic upper bound, NOT a fair generalization estimate, since every "
           f"case here was training data for 4 of the 5 ensembled fold models.")
 
+    # Build a clean, symlink-only input dir with ONLY each case's _0000 file,
+    # rather than pointing -i at the shared imagesTr folder directly -- that
+    # folder turned out to contain stray _0001.nii.gz files (128x256x256
+    # ROI-crop shape, from some other experiment) for at least a few cases,
+    # which made nnUNetv2_predict think Dataset304 (declared single-channel)
+    # had 2 input channels and crash on the shape mismatch. Same defensive
+    # pattern run_notta() already uses, just applied here too now that
+    # "read-only means safe" has been shown wrong.
+    in_dir = C.EXPALPHA_PRED_DIR / "_ensemble5_inputs"
+    _link_inputs(cases, images_dir, in_dir)
+
     subprocess.run([
         "nnUNetv2_predict",
-        "-i", str(images_dir),
+        "-i", str(in_dir),
         "-o", str(out_dir),
         "-d", str(dataset_id),
         "-c", "3d_fullres",
@@ -113,6 +124,7 @@ def run_ensemble5(dataset_id: int, trainer: str, plans: str):
         "-chk", "checkpoint_final.pth",
     ], check=True)
 
+    shutil.rmtree(in_dir, ignore_errors=True)
     print(f"[expAlpha] ensemble5 predictions written to {out_dir}")
 
 
