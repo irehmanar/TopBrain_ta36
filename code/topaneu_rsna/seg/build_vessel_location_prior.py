@@ -63,6 +63,14 @@ def main():
                     help="locations with fewer than this many arc-fraction "
                          "samples are flagged low_sample=true and must not be "
                          "returned by assign_location_rule.py's arc lookup")
+    ap.add_argument("--bootstrap_seed", type=int, default=None,
+                    help="[Experiment Gamma ensemble] if given, resamples the "
+                         "training case list WITH REPLACEMENT (same size, "
+                         "this seed) before computing the majority/arc-fraction "
+                         "tables -- a case sampled twice contributes its "
+                         "instances twice. Produces one bootstrap replicate of "
+                         "the prior for seg/ensemble_rule_bootstrap.py to vote "
+                         "across; omit for the normal, single, full-cohort prior.")
     a = ap.parse_args()
 
     spec = C.load_labels()
@@ -85,6 +93,11 @@ def main():
     n_oriented = n_unoriented = 0
 
     cases = uio.list_cases(C.LOCATION_MASKS, C.LABEL_SUFFIX)
+    if a.bootstrap_seed is not None:
+        rng = np.random.default_rng(a.bootstrap_seed)
+        cases = rng.choice(cases, size=len(cases), replace=True).tolist()
+        print(f"[bootstrap seed={a.bootstrap_seed}] resampled {len(set(cases))} "
+             f"unique of {len(cases)} case-slots (with replacement)")
     for case in tqdm(cases, desc="skeletonizing + projecting"):
         loc_lab, meta = uio.read(C.LOCATION_MASKS / f"{case}{C.LABEL_SUFFIX}")
         spacing = meta["spacing"]

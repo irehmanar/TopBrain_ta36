@@ -184,41 +184,36 @@ def _junction_candidate(inst, vessel_map, spacing, vessel_id, locs,
     return best_loc, best_dist
 
 
-def _arc_candidate(inst, vessel_map, spacing, vessel_name, vessel_id, prior,
-                   name_to_id, arc_ambiguous_margin):
-    """Best arc-fraction candidate. Returns (location_or_None,
-    lesion-to-skeleton distance, is_ambiguous, is_low_sample):
-      - unorientable / no table at all: (None, inf, False, False)
-      - orientable but the winning bucket is low_sample-flagged: (None,
-        skel_dist, False, True) -- untrustworthy, but distinct from the
-        "couldn't compute a position at all" case so callers can still
-        report it as its own diagnostic category
-      - confident hit: (location, skel_dist, is_ambiguous, False), where
-        `is_ambiguous` is True when the fraction sits within an EFFECTIVE
-        margin of the boundary separating its bucket from a neighbour --
-        capped at 40% of this bucket's own width (see the `eff_margin`
-        comment below for why a flat `arc_ambiguous_margin` is unsound on
-        its own), a close call between two adjacent locations rather than
-        sitting confidently inside one."""
-    arc_info = prior.get("arc", {}).get(vessel_name)
+def arc_bucket_decision(frac: float, arc_info: dict, arc_ambiguous_margin: float):
+    """The prior-dependent half of arc-fraction resolution: given an
+    already-computed raw arc-length fraction (geometry, independent of any
+    prior) and one prior's own "arc" table for this vessel, decide which
+    bucket it falls in. Returns (location_or_None, is_ambiguous, is_low_sample)
+    -- split out from _arc_candidate so seg/ensemble_rule_bootstrap.py can
+    replay this cheap, pure-lookup half against many bootstrap priors without
+    ever re-running the expensive skeletonization that produced `frac` in the
+    first place (frac itself never changes across bootstraps of the SAME
+    instance -- only which bucket boundaries it's compared against does).
+
+    - no table at all for this vessel: (None, False, False)
+    - winning bucket is low_sample-flagged: (None, False, True) --
+      untrustworthy, but distinct from "no table" so callers can report it
+      as its own diagnostic category
+    - confident hit: (location, is_ambiguous, False), where `is_ambiguous`
+      is True when the fraction sits within an EFFECTIVE margin of the
+      boundary separating its bucket from a neighbour -- capped at 40% of
+      this bucket's own width (see the inline comment below for why a flat
+      arc_ambiguous_margin is unsound on its own), a close call between two
+      adjacent locations rather than sitting confidently inside one."""
     if not arc_info or not arc_info["locations"]:
-        return None, np.inf, False, False
-    raw = vsk.extract_skeleton(vessel_map == vessel_id, spacing)
-    if raw is None:
-        return None, np.inf, False, False
-    skel = vsk.orient_skeleton(raw, vessel_map, spacing,
-                               vsk.PROXIMAL_ANCHOR.get(vessel_name, []), name_to_id)
-    centroid_mm = np.argwhere(inst).mean(0) * np.asarray(spacing, np.float64)
-    frac, skel_dist = vsk.arc_fraction(skel, centroid_mm)
-    if frac is None:
-        return None, np.inf, False, False
+        return None, False, False
 
     bucketed = arc_info["locations"]
     boundaries = arc_info["boundaries"]
     idx = min(int(np.searchsorted(boundaries, frac)), len(bucketed) - 1)
     entry = bucketed[idx]
     if entry.get("low_sample"):
-        return None, skel_dist, False, True
+        return None, False, True
 
     lo = boundaries[idx - 1] if idx > 0 else 0.0
     hi = boundaries[idx] if idx < len(boundaries) else 1.0
@@ -240,7 +235,35 @@ def _arc_candidate(inst, vessel_map, spacing, vessel_name, vessel_id, prior,
     bucket_width = hi - lo
     eff_margin = min(arc_ambiguous_margin, 0.4 * bucket_width)
     ambiguous = bool(nearby) and min(abs(frac - b) for b in nearby) < eff_margin
-    return entry["location"], skel_dist, ambiguous, False
+    return entry["location"], ambiguous, False
+
+
+def _arc_candidate(inst, vessel_map, spacing, vessel_name, vessel_id, prior,
+                   name_to_id, arc_ambiguous_margin):
+    """Best arc-fraction candidate: computes the raw geometry (skeleton,
+    lesion-to-skeleton projection) then defers the prior-dependent bucket
+    decision to arc_bucket_decision(). Returns (location_or_None,
+    lesion-to-skeleton distance, is_ambiguous, is_low_sample) -- see
+    arc_bucket_decision's own docstring for what each return value means;
+    this wrapper only adds "unorientable" as a fourth (None, inf, False,
+    False) case ahead of it."""
+    arc_info = prior.get("arc", {}).get(vessel_name)
+    if not arc_info or not arc_info["locations"]:
+        return None, np.inf, False, False
+    raw = vsk.extract_skeleton(vessel_map == vessel_id, spacing)
+    if raw is None:
+        return None, np.inf, False, False
+    skel = vsk.orient_skeleton(raw, vessel_map, spacing,
+                               vsk.PROXIMAL_ANCHOR.get(vessel_name, []), name_to_id)
+    centroid_mm = np.argwhere(inst).mean(0) * np.asarray(spacing, np.float64)
+    frac, skel_dist = vsk.arc_fraction(skel, centroid_mm)
+    if frac is None:
+        return None, np.inf, False, False
+
+    location, ambiguous, low_sample = arc_bucket_decision(frac, arc_info, arc_ambiguous_margin)
+    if low_sample:
+        return None, skel_dist, False, True
+    return location, skel_dist, ambiguous, False
 
 
 def resolve_shared_vessel(inst: np.ndarray, vessel_map: np.ndarray, spacing,
