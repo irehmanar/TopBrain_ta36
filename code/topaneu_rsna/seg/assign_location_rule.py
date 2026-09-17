@@ -445,6 +445,14 @@ def main():
                          "oracle_binary_pred_paths()'s docstring for the "
                          "consistency requirement across build_feature_table.py/"
                          "train_learned_assigner.py/build_hybrid_assignment.py.")
+    ap.add_argument("--binary_pred_dir", type=Path, default=None,
+                    help="use a flat directory of already-computed <case>.nii.gz "
+                         "binary predictions (e.g. expAlpha_predict_variants.py's "
+                         "ensemble5 output) instead of --binary_dataset's own "
+                         "fold_*/validation/ split -- for validating a specific, "
+                         "already-built prediction set (e.g. the exact one a Docker "
+                         "submission would use) end-to-end through the rule engine. "
+                         "Overrides --oracle_binary/--binary_dataset/--folds when given.")
     ap.add_argument("--vessel_source", choices=["gt", "pred"], default="gt")
     ap.add_argument("--vessel_pred_dir", type=Path, default=None)
     ap.add_argument("--tau_mm", type=float, default=4.0,
@@ -501,7 +509,12 @@ def main():
     loc_value = {loc: i + 1 for i, loc in enumerate(spec.locations)}
     name_to_id = {v: i + 1 for i, v in enumerate(spec.vessels)}
 
-    if a.oracle_binary:
+    if a.binary_pred_dir is not None:
+        bin_paths = {case: a.binary_pred_dir / f"{case}{C.LABEL_SUFFIX}"
+                    for case in uio.list_cases(a.binary_pred_dir, C.LABEL_SUFFIX)}
+        print(f"{len(bin_paths)} binary predictions read directly from "
+             f"{a.binary_pred_dir} (--oracle_binary/--binary_dataset/--folds ignored)")
+    elif a.oracle_binary:
         bin_paths = oracle_binary_pred_paths()
         print(f"{len(bin_paths)} ORACLE binary 'predictions' (ground-truth "
              "LOCATION_MASKS binarized -- perfect detector, isolates "
