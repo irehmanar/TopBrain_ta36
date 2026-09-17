@@ -194,10 +194,12 @@ def _arc_candidate(inst, vessel_map, spacing, vessel_name, vessel_id, prior,
         "couldn't compute a position at all" case so callers can still
         report it as its own diagnostic category
       - confident hit: (location, skel_dist, is_ambiguous, False), where
-        `is_ambiguous` is True when the fraction sits within
-        `arc_ambiguous_margin` of the boundary separating its bucket from a
-        neighbour -- a close call between two adjacent locations rather
-        than sitting confidently inside one."""
+        `is_ambiguous` is True when the fraction sits within an EFFECTIVE
+        margin of the boundary separating its bucket from a neighbour --
+        capped at 40% of this bucket's own width (see the `eff_margin`
+        comment below for why a flat `arc_ambiguous_margin` is unsound on
+        its own), a close call between two adjacent locations rather than
+        sitting confidently inside one."""
     arc_info = prior.get("arc", {}).get(vessel_name)
     if not arc_info or not arc_info["locations"]:
         return None, np.inf, False, False
@@ -218,10 +220,26 @@ def _arc_candidate(inst, vessel_map, spacing, vessel_name, vessel_id, prior,
     if entry.get("low_sample"):
         return None, skel_dist, False, True
 
-    nearby = [b for b in (boundaries[idx - 1] if idx > 0 else None,
-                         boundaries[idx] if idx < len(boundaries) else None)
+    lo = boundaries[idx - 1] if idx > 0 else 0.0
+    hi = boundaries[idx] if idx < len(boundaries) else 1.0
+    nearby = [b for b in (lo if idx > 0 else None, hi if idx < len(boundaries) else None)
              if b is not None]
-    ambiguous = bool(nearby) and min(abs(frac - b) for b in nearby) < arc_ambiguous_margin
+    # A flat `arc_ambiguous_margin` is unsound for a bucket narrower than
+    # 2*margin: e.g. "1.10 BA tip"'s own bucket spans only [0.9847, 1.0]
+    # (width 0.0153) against the default margin of 0.03 -- EVERY point
+    # inside that bucket, including textbook-confident readings at 0.988
+    # and 1.000, then sits within 0.03 of its own lower boundary, so the
+    # whole bucket was permanently "ambiguous" and lost to any nearby
+    # junction candidate regardless of tau tuning (confirmed: this is what
+    # was happening to job 21's two true BA-tip instances -- see this
+    # function's own docstring and jobs/README_task2_location_rule_experiments.md
+    # job 21's still-open BA-tip finding). Capping the effective margin at
+    # 40% of this bucket's own width keeps the "close to a real boundary"
+    # intent intact while making it impossible for a bucket to be ambiguous
+    # everywhere inside itself.
+    bucket_width = hi - lo
+    eff_margin = min(arc_ambiguous_margin, 0.4 * bucket_width)
+    ambiguous = bool(nearby) and min(abs(frac - b) for b in nearby) < eff_margin
     return entry["location"], skel_dist, ambiguous, False
 
 

@@ -104,8 +104,15 @@ def score_predictions(pred_by_case: dict, spec, loc_value: dict, a, label: str,
     def nanmean(i):
         return float(np.nanmean([row[i] for row in per_class.values()]))
 
+    # tp/fp live at indices 6/7 of each per_class row (see assign_location_rule.py's
+    # score()) -- a class with tp+fp>0 was assigned to at least one instance by
+    # this hybrid, regardless of whether that assignment was ever correct.
+    classes_ever_predicted = sum(1 for row in per_class.values() if row[6] + row[7] > 0)
+
     print(f"\n=== {label} ===")
     print(f"pooled per-component accuracy: {pooled_acc:.4f} over {n_components} instances")
+    print(f"  macro recall (mean recall over classes): {nanmean(4):.4f}")
+    print(f"  classes ever predicted: {classes_ever_predicted} / {len(per_class)}")
     for i, k in enumerate(("dice", "vs", "hd95", "precision", "recall", "mcc")):
         print(f"  {k:<12}{nanmean(i):.4f}")
 
