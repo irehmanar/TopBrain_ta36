@@ -184,6 +184,23 @@ DS_LOCATION_GTVESSEL    = 312   # Dataset312_TopAneuLocationGTVessel
 # same jobs' docstrings), so fold_all + a manual holdout replaces it here,
 # the same tradeoff already made for Models 1/2/3.
 DS_VESSELCOND_SEG = 313   # Dataset313_TopAneuVesselCondSeg
+# [TOPANEU] Experiment Delta: last-try binary aneurysm improvement, run on a
+# SEPARATE server/checkout so it cannot affect the main submission pipeline.
+# Dataset304's own dataset.json declares its single input channel as
+# "CTA_MRA" (see build_nnunet_datasets.py) -- CTA and MRA are pooled into
+# one nnU-Net z-score-normalized channel despite CTA being calibrated
+# Hounsfield units and MRA being arbitrary, uncalibrated scanner intensity.
+# Forcing one network to learn both intensity semantics at once is a
+# plausible, previously-undiagnosed source of Dataset304's ~0.60 ceiling.
+# This splits the SAME binary target into two modality-homogeneous datasets
+# (same label rule as Dataset304: LOCATION_MASKS collapsed to binary), each
+# trained as its own real 5-fold model, then pooled back into one combined
+# Dice for a fair, same-cohort comparison against Dataset304's baseline. See
+# prep/classify_modality.py (heuristic HU-based split -- no modality field
+# exists anywhere in this dataset's own metadata, confirmed by grep) and
+# jobs/34_modality_split_binary_aneurysm.
+DS_ANEURYSM_CTA = 314   # Dataset314_TopAneuAneurysmCTA (binary, CTA-only cases)
+DS_ANEURYSM_MRA = 315   # Dataset315_TopAneuAneurysmMRA (binary, MRA-only cases)
 DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm",
            DS_ANEURYSM_ROI: "TopAneuAneurysmROI",
@@ -194,7 +211,12 @@ DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_ANEURYSM_FINE_RAW: "TopAneuAneurysmFineRaw",
            DS_ANEURYSM_FINE_VESSEL: "TopAneuAneurysmFineVessel",
            DS_LOCATION_GTVESSEL: "TopAneuLocationGTVessel",
-           DS_VESSELCOND_SEG: "TopAneuVesselCondSeg"}
+           DS_VESSELCOND_SEG: "TopAneuVesselCondSeg",
+           DS_ANEURYSM_CTA: "TopAneuAneurysmCTA",
+           DS_ANEURYSM_MRA: "TopAneuAneurysmMRA"}
+# case -> "CTA" / "MRA" / "UNCERTAIN", written once by prep/classify_modality.py
+MODALITY_JSON = CODE_ROOT / "topaneu_rsna" / "modality_split.json"
+MODALITY_STATS_CSV = LOG_ROOT / "modality_classification_stats.csv"
 
 PLANS_RESENC = "nnUNetResEncUNetMPlans"
 # trainers bundled in the author's nnUNet fork
