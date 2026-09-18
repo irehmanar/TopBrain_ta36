@@ -59,14 +59,20 @@ def load_cache(path: Path) -> list[dict]:
 
 
 def decide_one(row: dict, prior: dict, vessel_to_locations: dict,
-               junction_override_mm: float, arc_ambiguous_margin: float) -> str | None:
+               junction_override_mm: float, arc_ambiguous_margin: float
+               ) -> tuple[str | None, str]:
     """Replays resolve_shared_vessel's decision logic for one cached
     instance under one bootstrap prior, using only the prior-independent
-    geometry already in `row` -- no skeleton/contact-patch recomputation."""
+    geometry already in `row` -- no skeleton/contact-patch recomputation.
+    Returns (location_or_None, resolved_by), resolved_by matching
+    assign_location_rule.py's own categories (single/junction/arc/
+    arc_low_sample_fallback/majority) -- needed so a downstream
+    build_hybrid_assignment.py run can condition an override on it exactly
+    like it already does for the single-run rule."""
     if not row["vessel"]:
-        return None
+        return None, "unassigned"
     if int(row["n_locs"]) <= 1:
-        return row["single_location"] or None
+        return row["single_location"] or None, "single"
 
     vessel_name = row["vessel"]
     locs = vessel_to_locations.get(vessel_name, [])
@@ -82,10 +88,12 @@ def decide_one(row: dict, prior: dict, vessel_to_locations: dict,
         a_loc, a_ambiguous, a_low_sample = None, False, False
 
     if j_loc is not None and (a_loc is None or (j_dist <= junction_override_mm and a_ambiguous)):
-        return j_loc
+        return j_loc, "junction"
     if a_loc is not None:
-        return a_loc
-    return prior["majority"].get(vessel_name, locs[0] if locs else None)
+        return a_loc, "arc"
+    if a_low_sample:
+        return prior["majority"].get(vessel_name, locs[0] if locs else None), "arc_low_sample_fallback"
+    return prior["majority"].get(vessel_name, locs[0] if locs else None), "majority"
 
 
 def main():
@@ -104,11 +112,24 @@ def main():
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--oracle_binary", action="store_true")
+    ap.add_argument("--binary_pred_dir", type=Path, default=None,
+                    help="MUST match whatever binary source cache_shared_vessel_geometry.py "
+                         "was run with to build --geometry_cache, or instance_idx numbering "
+                         "won't line up -- see oracle_binary_pred_paths()'s own consistency "
+                         "warning for why this matters. Overrides --oracle_binary/"
+                         "--binary_dataset/--folds when given.")
     ap.add_argument("--out_csv", type=Path,
                     default=C.LOG_ROOT / "task2_rule_assignment_ensemble.csv")
     ap.add_argument("--votes_csv", type=Path, default=None,
                     help="optional: dump every instance's per-bootstrap votes and "
                          "the winning majority answer, for auditing close calls")
+    ap.add_argument("--instances_csv", type=Path, default=None,
+                    help="optional: write a build_hybrid_assignment.py-compatible "
+                         "per-instance CSV (case, instance_idx, vessel, size, "
+                         "host_dist_mm, resolved_by, extra_dist_mm, assigned, "
+                         "true_class, correct) so this bootstrap-ensemble rule's "
+                         "own output can be combined with a learned classifier's "
+                         "predictions the same way job 65 did for the single-run rule")
     a = ap.parse_args()
 
     spec = C.load_labels()
@@ -127,19 +148,35 @@ def main():
     rows = load_cache(a.geometry_cache)
     print(f"{len(rows)} cached instances from {a.geometry_cache}")
 
-    votes_out = []
+    votes_out, instances_out = [], []
     final_by_key: dict[tuple, str | None] = {}
     for row in tqdm(rows, desc="voting"):
-        votes = [decide_one(row, p, vessel_to_locations, a.junction_override_mm,
-                            a.arc_ambiguous_margin) for p in priors]
-        tally = Counter(v for v in votes if v is not None)
+        decisions = [decide_one(row, p, vessel_to_locations, a.junction_override_mm,
+                                a.arc_ambiguous_margin) for p in priors]
+        locations = [loc for loc, _ in decisions]
+        tally = Counter(v for v in locations if v is not None)
         winner = tally.most_common(1)[0][0] if tally else None
         final_by_key[(row["case"], int(row["instance_idx"]))] = winner
+
+        # resolved_by for the winning LOCATION: the most common resolution
+        # path among just the bootstrap replicates that actually voted for
+        # it -- the most representative single tag for a majority answer
+        # that different replicates may have reached via different paths.
+        winner_resolved_by = (Counter(rb for loc, rb in decisions if loc == winner)
+                              .most_common(1)[0][0] if winner is not None else "unassigned")
+
         if a.votes_csv is not None:
             votes_out.append(dict(case=row["case"], instance_idx=row["instance_idx"],
                                   true_class=row["true_class"], winner=winner or "",
                                   n_votes_for_winner=tally.get(winner, 0) if winner else 0,
-                                  votes=";".join(v or "None" for v in votes)))
+                                  votes=";".join(v or "None" for v in locations)))
+        if a.instances_csv is not None:
+            instances_out.append(dict(
+                case=row["case"], instance_idx=row["instance_idx"], vessel=row["vessel"],
+                size=row["size"], host_dist_mm=row["host_dist_mm"],
+                resolved_by=winner_resolved_by, extra_dist_mm="",
+                assigned=(winner or ""), true_class=row["true_class"],
+                correct=(winner == row["true_class"] if winner is not None else False)))
 
     if a.votes_csv is not None:
         a.votes_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -150,11 +187,25 @@ def main():
             w.writerows(votes_out)
         print(f"per-instance votes written to {a.votes_csv}")
 
+    if a.instances_csv is not None:
+        a.instances_csv.parent.mkdir(parents=True, exist_ok=True)
+        with open(a.instances_csv, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=["case", "instance_idx", "vessel", "size",
+                                              "host_dist_mm", "resolved_by", "extra_dist_mm",
+                                              "assigned", "true_class", "correct"])
+            w.writeheader()
+            w.writerows(instances_out)
+        print(f"hybrid-compatible per-instance CSV written to {a.instances_csv}")
+
     # Rebuild final per-case masks (needed for score()'s Dice/VS/HD95, not
-    # just the pooled-component accuracy) -- same binary predictions +
-    # ndimage.label as every other stage in this track, so instance_idx
-    # numbering matches the geometry cache exactly.
-    if a.oracle_binary:
+    # just the pooled-component accuracy) -- MUST use the same binary source
+    # cache_shared_vessel_geometry.py was built from, or instance_idx numbering
+    # won't line up (same requirement oracle_binary_pred_paths() itself warns
+    # about elsewhere in this codebase).
+    if a.binary_pred_dir is not None:
+        bin_paths = {case: a.binary_pred_dir / f"{case}{C.LABEL_SUFFIX}"
+                    for case in uio.list_cases(a.binary_pred_dir, C.LABEL_SUFFIX)}
+    elif a.oracle_binary:
         bin_paths = oracle_binary_pred_paths()
     else:
         bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)

@@ -188,7 +188,11 @@ def main():
     print(f"\n[expAlpha postproc] BEST threshold = {best_thr} mm^3 "
           f"(pooled_dice {before['pooled_dice']:.4f} -> {best_m['pooled_dice']:.4f})")
 
-    out_dir = C.EXPALPHA_PRED_DIR / "postproc_best"
+    # Variant-specific output dir -- a flat "postproc_best" here would let a
+    # --base_variant ensemble5 run silently overwrite a --base_variant
+    # baseline run's masks (job 106) or vice versa, since both call this
+    # same script.
+    out_dir = C.EXPALPHA_PRED_DIR / f"postproc_best_{a.base_variant}"
     out_dir.mkdir(parents=True, exist_ok=True)
     apply_threshold(cache, best_thr, out_dir=out_dir)
 
@@ -196,7 +200,7 @@ def main():
             f"{THRESHOLDS_MM3} against this same eval cohort (mild "
             f"threshold-selection optimism, disclosed here) on top of "
             f"base_variant={a.base_variant}.")
-    append_result_row("postproc_best", best_m, a.out, note)
+    append_result_row(f"postproc_best_{a.base_variant}", best_m, a.out, note)
     print(f"\nbest-threshold masks written to {out_dir}")
     print(f"full sweep table written to {a.sweep_csv}")
     print(f"row appended to {a.out}")

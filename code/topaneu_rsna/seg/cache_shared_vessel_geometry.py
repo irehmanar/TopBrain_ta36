@@ -56,6 +56,17 @@ def main():
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--oracle_binary", action="store_true")
+    ap.add_argument("--binary_pred_dir", type=Path, default=None,
+                    help="use a flat directory of already-computed <case>.nii.gz "
+                         "binary predictions instead of --binary_dataset's own "
+                         "fold_*/validation/ split -- see assign_location_rule.py's "
+                         "own --binary_pred_dir for the identical convention. "
+                         "Overrides --oracle_binary/--binary_dataset/--folds.")
+    ap.add_argument("--vessel_source", choices=["gt", "pred"], default="gt")
+    ap.add_argument("--vessel_pred_dir", type=Path, default=None,
+                    help="required when --vessel_source pred -- a directory of "
+                         "already-computed <case>.nii.gz vessel predictions, e.g. "
+                         "job 78's whole-head Model 2 output")
     ap.add_argument("--tau_mm", type=float, default=4.0)
     ap.add_argument("--junction_tau_mm", type=float, default=2.0,
                     help="candidacy radius for the junction contact-patch check "
@@ -67,12 +78,19 @@ def main():
                     default=C.LOG_ROOT / "task2_shared_vessel_geometry_cache.csv")
     a = ap.parse_args()
 
+    if a.vessel_source == "pred" and a.vessel_pred_dir is None:
+        raise SystemExit("--vessel_source pred requires --vessel_pred_dir")
+
     spec = C.load_labels()
     vessel_to_locations = build_vessel_to_locations(spec)
     loc_value = {loc: i + 1 for i, loc in enumerate(spec.locations)}
     name_to_id = {v: i + 1 for i, v in enumerate(spec.vessels)}
 
-    if a.oracle_binary:
+    if a.binary_pred_dir is not None:
+        bin_paths = {case: a.binary_pred_dir / f"{case}{C.LABEL_SUFFIX}"
+                    for case in uio.list_cases(a.binary_pred_dir, C.LABEL_SUFFIX)}
+        print(f"{len(bin_paths)} binary predictions read directly from {a.binary_pred_dir}")
+    elif a.oracle_binary:
         bin_paths = oracle_binary_pred_paths()
     else:
         bin_paths = load_binary_pred_paths(a.binary_dataset, a.trainer, a.plans, a.folds)
@@ -84,7 +102,8 @@ def main():
         binmask = binmask > 0
         spacing = meta["spacing"]
 
-        vp = C.VESSEL_MASKS / f"{case}{C.LABEL_SUFFIX}"
+        vp = (C.VESSEL_MASKS / f"{case}{C.LABEL_SUFFIX}" if a.vessel_source == "gt"
+             else a.vessel_pred_dir / f"{case}{C.LABEL_SUFFIX}")
         gt_p = C.LOCATION_MASKS / f"{case}{C.LABEL_SUFFIX}"
         if not vp.exists() or not gt_p.exists():
             continue
