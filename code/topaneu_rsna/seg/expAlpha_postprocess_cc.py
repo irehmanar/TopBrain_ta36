@@ -20,8 +20,18 @@ notta/ensemble5), per the task's own "measure each step individually" ask.
      For each threshold, strip components below it and recompute the same
      pooled Dice/IoU/precision/recall used by expAlpha_evaluate_variants.py.
   4. Write the best-by-pooled-Dice threshold's masks to
-     EXPALPHA_PRED_DIR/postproc_best/ and append a "postproc_best" row (plus
-     the full sweep table) so it's directly comparable to the baseline row.
+     EXPALPHA_PRED_DIR/postproc_best_<variant>/ and append a result row
+     (plus the full sweep table) so it's directly comparable to the
+     baseline row.
+
+Memory: each case is labeled EXACTLY ONCE regardless of how many thresholds
+are swept (case-major streaming: for each case, label once, then evaluate
+every threshold immediately and accumulate into per-threshold running
+totals) -- never holds more than one case's full-resolution labeled array
+in memory at a time. An earlier version cached every case's labeled array
+for the whole run's lifetime, which OOM-killed at ~80% through a 417-case,
+64GB job (tens of GB of int label arrays held simultaneously) -- this is a
+real fix, not a resource-limit workaround.
 
     python -m topaneu_rsna.seg.expAlpha_postprocess_cc --base_variant baseline
 """
@@ -44,94 +54,97 @@ from topaneu_rsna.utils import io as uio
 THRESHOLDS_MM3 = [0, 2, 5, 10, 20, 50, 100, 200]
 
 
-def label_components(pred_by_case: dict):
-    """One pass: read + label every case once, cache (labels, sizes_vox,
-    spacing, meta) so the threshold sweep below never re-reads/re-labels."""
-    cache = {}
+def _new_stat():
+    return dict(inter=0, pred_sum=0, gt_sum=0, tp=0, fp=0, fn=0, tn=0, per_case_dice=[])
+
+
+def sweep_thresholds(pred_by_case: dict, gt_dir: Path, thresholds: list[float]):
+    """Case-major streaming sweep: labels each case's predicted mask exactly
+    once, then immediately evaluates every threshold in `thresholds` against
+    that one case's labeled array before moving to the next case. Returns
+    (per-threshold running stats, pooled component-volume distribution) --
+    never a per-case cache that grows with cohort size."""
+    stats = {thr: _new_stat() for thr in thresholds}
     all_component_vols = []
-    for case, pp in tqdm(sorted(pred_by_case.items()), desc="labeling"):
-        pred, meta = uio.read(pp)
-        lab, n = ndimage.label(pred > 0, structure=np.ones((3, 3, 3)))
-        if n == 0:
-            cache[case] = (lab, np.array([]), meta, pred.shape)
-            continue
-        voxel_mm3 = float(np.prod(meta["spacing"]))
-        sizes_vox = ndimage.sum(np.ones_like(lab), lab, index=range(1, n + 1))
-        sizes_mm3 = sizes_vox * voxel_mm3
-        cache[case] = (lab, sizes_mm3, meta, pred.shape)
-        all_component_vols.extend(sizes_mm3.tolist())
-    return cache, np.asarray(all_component_vols)
 
-
-def apply_threshold(cache: dict, threshold_mm3: float, out_dir: Path | None):
-    """Return {case: binary mask array} with components < threshold zeroed.
-    Optionally writes each case's mask to out_dir (only used for the final
-    chosen threshold, not every sweep point)."""
-    masks = {}
-    for case, (lab, sizes_mm3, meta, shape) in cache.items():
-        if lab.max() == 0:
-            out = np.zeros(shape, dtype=np.uint8)
-        else:
-            keep = np.where(sizes_mm3 >= threshold_mm3)[0] + 1
-            out = np.isin(lab, keep).astype(np.uint8)
-        masks[case] = out
-        if out_dir is not None:
-            uio.write(out, meta, out_dir / f"{case}{C.LABEL_SUFFIX}")
-    return masks
-
-
-def evaluate_masks_in_memory(masks: dict, gt_dir: Path):
-    """Same metric definitions as expAlpha_evaluate_variants.evaluate(), but
-    against in-memory arrays instead of re-reading prediction files from
-    disk for every threshold in the sweep."""
-    inter = pred_sum = gt_sum = 0
-    tp = fp = fn = tn = 0
-    per_case_dice = []
-    for case, pm in masks.items():
+    for case, pp in tqdm(sorted(pred_by_case.items()), desc="labeling+sweeping"):
         gp = gt_dir / f"{case}{C.LABEL_SUFFIX}"
         if not gp.exists():
             continue
+        pred, meta = uio.read(pp)
         gt, _ = uio.read(gp)
-        if pm.shape != gt.shape:
-            # Same known issue as expAlpha_evaluate_variants.py's evaluate() --
-            # a handful of Dataset304 raw files had a stale ROI-cropped-shape
-            # file where a native whole-head shape should be. Skip rather than
-            # crash the whole threshold sweep over one bad case.
-            print(f"[WARNING] shape mismatch for {case}: pred={pm.shape} "
+        if pred.shape != gt.shape:
+            print(f"[WARNING] shape mismatch for {case}: pred={pred.shape} "
                  f"gt={gt.shape} -- skipping.")
             continue
         gm = gt > 0
-        pm_b = pm > 0
-        pn, gn = int(pm_b.sum()), int(gm.sum())
-        it = int((pm_b & gm).sum())
-        inter += it; pred_sum += pn; gt_sum += gn
-        if gn > 0 and it > 0:
-            tp += 1
-        elif gn > 0 and it == 0:
-            fn += 1
-        elif gn == 0 and pn > 0:
-            fp += 1
-        else:
-            tn += 1
-        per_case_dice.append(1.0 if pn + gn == 0 else 2 * it / (pn + gn))
 
-    per_case_dice = np.asarray(per_case_dice)
+        lab, n = ndimage.label(pred > 0, structure=np.ones((3, 3, 3)))
+        if n > 0:
+            voxel_mm3 = float(np.prod(meta["spacing"]))
+            sizes_mm3 = ndimage.sum(np.ones_like(lab), lab, index=range(1, n + 1)) * voxel_mm3
+            all_component_vols.extend(sizes_mm3.tolist())
+        else:
+            sizes_mm3 = np.array([])
+
+        for thr in thresholds:
+            if n == 0:
+                pm = np.zeros(pred.shape, dtype=bool)
+            else:
+                keep = np.where(sizes_mm3 >= thr)[0] + 1
+                pm = np.isin(lab, keep)
+            pn, gn = int(pm.sum()), int(gm.sum())
+            it = int((pm & gm).sum())
+            s = stats[thr]
+            s["inter"] += it; s["pred_sum"] += pn; s["gt_sum"] += gn
+            if gn > 0 and it > 0:
+                s["tp"] += 1
+            elif gn > 0:
+                s["fn"] += 1
+            elif pn > 0:
+                s["fp"] += 1
+            else:
+                s["tn"] += 1
+            s["per_case_dice"].append(1.0 if pn + gn == 0 else 2 * it / (pn + gn))
+        # `pred`, `gt`, `lab` all go out of scope / get overwritten next
+        # iteration -- nothing case-sized is retained across the loop.
+
+    return stats, np.asarray(all_component_vols)
+
+
+def stat_to_metrics(s: dict) -> dict:
+    per_case_dice = np.asarray(s["per_case_dice"])
     with np.errstate(invalid="ignore", divide="ignore"):
-        pooled_dice = 2 * inter / (pred_sum + gt_sum) if (pred_sum + gt_sum) else float("nan")
-        pooled_iou = inter / (pred_sum + gt_sum - inter) if (pred_sum + gt_sum - inter) else float("nan")
-        precision = tp / (tp + fp) if (tp + fp) else float("nan")
-        recall = tp / (tp + fn) if (tp + fn) else float("nan")
+        pooled_dice = 2 * s["inter"] / (s["pred_sum"] + s["gt_sum"]) if (s["pred_sum"] + s["gt_sum"]) else float("nan")
+        pooled_iou = s["inter"] / (s["pred_sum"] + s["gt_sum"] - s["inter"]) if (s["pred_sum"] + s["gt_sum"] - s["inter"]) else float("nan")
+        precision = s["tp"] / (s["tp"] + s["fp"]) if (s["tp"] + s["fp"]) else float("nan")
+        recall = s["tp"] / (s["tp"] + s["fn"]) if (s["tp"] + s["fn"]) else float("nan")
     return dict(
         n_cases=len(per_case_dice), pooled_dice=pooled_dice, pooled_iou=pooled_iou,
-        precision=precision, recall=recall, tp=tp, fp=fp, fn=fn, tn=tn,
-        case_dice_mean=float(per_case_dice.mean()),
-        case_dice_median=float(np.median(per_case_dice)),
-        case_dice_std=float(per_case_dice.std()),
-        case_dice_p25=float(np.percentile(per_case_dice, 25)),
-        case_dice_p75=float(np.percentile(per_case_dice, 75)),
-        case_dice_min=float(per_case_dice.min()),
-        case_dice_max=float(per_case_dice.max()),
+        precision=precision, recall=recall, tp=s["tp"], fp=s["fp"], fn=s["fn"], tn=s["tn"],
+        case_dice_mean=float(per_case_dice.mean()) if len(per_case_dice) else float("nan"),
+        case_dice_median=float(np.median(per_case_dice)) if len(per_case_dice) else float("nan"),
+        case_dice_std=float(per_case_dice.std()) if len(per_case_dice) else float("nan"),
     )
+
+
+def write_thresholded_masks(pred_by_case: dict, threshold_mm3: float, out_dir: Path):
+    """Second, single-purpose pass -- only ever run once, for the final
+    chosen threshold, so re-labeling every case a second time here is cheap
+    relative to the memory it saves versus caching every case's label array
+    for the whole sweep's lifetime."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for case, pp in tqdm(sorted(pred_by_case.items()), desc="writing best-threshold masks"):
+        pred, meta = uio.read(pp)
+        lab, n = ndimage.label(pred > 0, structure=np.ones((3, 3, 3)))
+        if n == 0:
+            out = np.zeros(pred.shape, dtype=np.uint8)
+        else:
+            voxel_mm3 = float(np.prod(meta["spacing"]))
+            sizes_mm3 = ndimage.sum(np.ones_like(lab), lab, index=range(1, n + 1)) * voxel_mm3
+            keep = np.where(sizes_mm3 >= threshold_mm3)[0] + 1
+            out = np.isin(lab, keep).astype(np.uint8)
+        uio.write(out, meta, out_dir / f"{case}{C.LABEL_SUFFIX}")
 
 
 def main():
@@ -154,7 +167,7 @@ def main():
     print(f"[expAlpha postproc] before (threshold=0, i.e. no removal): "
           f"pooled_dice={before['pooled_dice']:.4f}")
 
-    cache, all_vols = label_components(pred_by_case)
+    stats, all_vols = sweep_thresholds(pred_by_case, gt_dir, THRESHOLDS_MM3)
     print(f"\n[expAlpha postproc] component volume distribution "
           f"(n={len(all_vols)} components across all cases):")
     if len(all_vols):
@@ -164,8 +177,7 @@ def main():
     sweep_rows = []
     best = None
     for thr in THRESHOLDS_MM3:
-        masks = apply_threshold(cache, thr, out_dir=None)
-        m = evaluate_masks_in_memory(masks, gt_dir)
+        m = stat_to_metrics(stats[thr])
         sweep_rows.append((thr, m))
         print(f"  threshold={thr:>5} mm^3  pooled_dice={m['pooled_dice']:.4f}  "
               f"precision={m['precision']:.4f}  recall={m['recall']:.4f}  "
@@ -193,8 +205,7 @@ def main():
     # baseline run's masks (job 106) or vice versa, since both call this
     # same script.
     out_dir = C.EXPALPHA_PRED_DIR / f"postproc_best_{a.base_variant}"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    apply_threshold(cache, best_thr, out_dir=out_dir)
+    write_thresholded_masks(pred_by_case, best_thr, out_dir)
 
     note = (f"CC volume threshold={best_thr}mm^3 chosen by sweeping "
             f"{THRESHOLDS_MM3} against this same eval cohort (mild "
