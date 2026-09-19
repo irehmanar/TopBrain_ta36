@@ -63,7 +63,8 @@ def hd95(pred, gt, spacing):
 
 
 def run_one_setting(dataset_id: int, trainer: str, plans: str, folds: list[int],
-                    patch_size: list[int], use_mirroring: bool, label: str):
+                    patch_size: list[int], use_mirroring: bool, label: str,
+                    allowed_axes=None):
     model_dir = (C.nnUNet_results / f"Dataset{dataset_id:03d}_{C.DS_NAMES[dataset_id]}"
                 / f"{trainer}__{plans}__3d_fullres")
     images_dir = C.nnUNet_raw / f"Dataset{dataset_id:03d}_{C.DS_NAMES[dataset_id]}" / "imagesTr"
@@ -87,6 +88,8 @@ def run_one_setting(dataset_id: int, trainer: str, plans: str, folds: list[int],
         predictor.initialize_from_trained_model_folder(
             str(model_dir), use_folds=(fold,), checkpoint_name="checkpoint_final.pth")
         predictor.configuration_manager.configuration["patch_size"] = list(patch_size)
+        if allowed_axes is not None:
+            predictor.allowed_mirroring_axes = tuple(allowed_axes)
 
         for case in tqdm(cases, desc=f"[{label}] fold {fold}"):
             gp = gt_dir / f"{case}{C.LABEL_SUFFIX}"
@@ -146,7 +149,8 @@ def main():
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--out", type=str, default=None)
-    ap.add_argument("--settings", choices=["both", "baseline", "deployed"], default="both")
+    ap.add_argument("--settings", choices=["both", "baseline", "deployed", "mirror_x", "p112"],
+                    default="both")
     a = ap.parse_args()
 
     out = a.out or str(C.LOG_ROOT / f"patch_size_ablation_{a.settings}.csv")
@@ -159,6 +163,14 @@ def main():
         settings = settings[:1]
     elif a.settings == "deployed":
         settings = settings[1:]
+    elif a.settings == "mirror_x":
+        # axis index 2 = last spatial axis = left-right; nnU-Net's own mirror
+        # list is [z, y, x], so (2,) gives exactly one flip (2x compute).
+        settings = [dict(patch_size=[96, 192, 192], use_mirroring=True,
+                         allowed_axes=(2,), label="p96_mirror_x_only")]
+    elif a.settings == "p112":
+        settings = [dict(patch_size=[112, 224, 224], use_mirroring=False,
+                         label="p112_224_224_nomirror")]
 
     rows = []
     for s in settings:
