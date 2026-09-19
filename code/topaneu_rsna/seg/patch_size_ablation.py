@@ -149,7 +149,7 @@ def main():
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--out", type=str, default=None)
-    ap.add_argument("--settings", choices=["both", "baseline", "deployed", "mirror_x", "p112"],
+    ap.add_argument("--settings", choices=["both", "baseline", "deployed", "mirror_x", "p112", "p112_mirror_x"],
                     default="both")
     a = ap.parse_args()
 
@@ -168,6 +168,9 @@ def main():
         # list is [z, y, x], so (2,) gives exactly one flip (2x compute).
         settings = [dict(patch_size=[96, 192, 192], use_mirroring=True,
                          allowed_axes=(2,), label="p96_mirror_x_only")]
+    elif a.settings == "p112_mirror_x":
+        settings = [dict(patch_size=[112, 224, 224], use_mirroring=True,
+                         allowed_axes=(2,), label="p112_mirror_x")]
     elif a.settings == "p112":
         settings = [dict(patch_size=[112, 224, 224], use_mirroring=False,
                          label="p112_224_224_nomirror")]
