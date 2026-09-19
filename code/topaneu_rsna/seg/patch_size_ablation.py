@@ -120,6 +120,11 @@ def run_one_setting(dataset_id: int, trainer: str, plans: str, folds: list[int],
         del predictor
         torch.cuda.empty_cache()
 
+        run_dice = 2 * inter / (pred_sum + gt_sum) if (pred_sum + gt_sum) else float("nan")
+        print(f"[{label}] after fold {fold}: cases={n_cases} dice={run_dice:.4f} "
+              f"tp={tp} fp={fp} fn={fn} tn={tn} inter={inter} pred_sum={pred_sum} "
+              f"gt_sum={gt_sum}", flush=True)
+
     with np.errstate(invalid="ignore", divide="ignore"):
         dice = 2 * inter / (pred_sum + gt_sum) if (pred_sum + gt_sum) else float("nan")
         vs = 1 - abs(pred_sum - gt_sum) / (pred_sum + gt_sum) if (pred_sum + gt_sum) else float("nan")
