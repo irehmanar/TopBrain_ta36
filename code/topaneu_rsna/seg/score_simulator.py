@@ -85,6 +85,7 @@ def main():
     ap.add_argument("--acom_csv", type=Path,
                     default=C.LOG_ROOT / "task2_acom_override_analysis.csv")
     ap.add_argument("--gt_cache", type=Path, default=C.LOG_ROOT / "task2_gt_class_sets.csv")
+    ap.add_argument("--modality", choices=["all", "ct", "mr"], default="all")
     a = ap.parse_args()
 
     spec = C.load_labels()
@@ -105,6 +106,10 @@ def main():
             rows.append(dict(case=case, classes=";".join(sorted(gt_sets[case]))))
         pd.DataFrame(rows).to_csv(a.gt_cache, index=False)
     cases = [c for c in cases if c in gt_sets]
+    if a.modality != "all":
+        tag = "_ct_" if a.modality == "ct" else "_mr_"
+        cases = [c for c in cases if tag in c]
+        print(f"modality filter: {a.modality.upper()}")
     print(f"{len(cases)} cases; GT locations per case: "
           f"mean {np.mean([len(gt_sets[c]) for c in cases]):.2f}")
 

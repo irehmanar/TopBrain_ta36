@@ -34,8 +34,9 @@ BIG_VOX = 3000
 PAD = 6
 ALL_K = [0, 1, 2, 3, 4]
 BIG_K = [1, 2, 3]
-HD_CONFIGS = {"all_0", "all_1", "all_2", "all_3", "big_1", "big_2"}
-CONFIGS = [f"all_{k}" for k in ALL_K] + [f"big_{k}" for k in BIG_K]
+HD_CONFIGS = {"all_0", "all_1", "all_2", "all_3", "big_1", "big_2", "fill_0", "close_2"}
+CONFIGS = ([f"all_{k}" for k in ALL_K] + [f"big_{k}" for k in BIG_K]
+           + ["fill_0", "fill_1", "close_2"])
 
 
 def grow(mask, k):
@@ -62,6 +63,12 @@ def variants(pc):
     rest = pc & ~big
     for k in BIG_K:
         out[f"big_{k}"] = rest | grow(big, k)
+    # hole filling (aneurysm sacs are solid) and closing (merges fragments of
+    # one sac), with and without growth
+    filled = ndimage.binary_fill_holes(pc)
+    out["fill_0"] = filled
+    out["fill_1"] = ndimage.binary_dilation(filled)
+    out["close_2"] = ndimage.binary_closing(pc, iterations=2)
     return out
 
 

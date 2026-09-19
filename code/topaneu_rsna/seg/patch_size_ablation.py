@@ -64,7 +64,7 @@ def hd95(pred, gt, spacing):
 
 def run_one_setting(dataset_id: int, trainer: str, plans: str, folds: list[int],
                     patch_size: list[int], use_mirroring: bool, label: str,
-                    allowed_axes=None):
+                    allowed_axes=None, tile_step: float = 0.5):
     model_dir = (C.nnUNet_results / f"Dataset{dataset_id:03d}_{C.DS_NAMES[dataset_id]}"
                 / f"{trainer}__{plans}__3d_fullres")
     images_dir = C.nnUNet_raw / f"Dataset{dataset_id:03d}_{C.DS_NAMES[dataset_id]}" / "imagesTr"
@@ -82,7 +82,7 @@ def run_one_setting(dataset_id: int, trainer: str, plans: str, folds: list[int],
             continue
 
         predictor = nnUNetPredictor(
-            tile_step_size=0.5, use_gaussian=True, use_mirroring=use_mirroring,
+            tile_step_size=tile_step, use_gaussian=True, use_mirroring=use_mirroring,
             perform_everything_on_device=False,
             device=device, verbose=False, verbose_preprocessing=False, allow_tqdm=False)
         predictor.initialize_from_trained_model_folder(
@@ -149,7 +149,8 @@ def main():
     ap.add_argument("--plans", default=C.PLANS_RESENC)
     ap.add_argument("--folds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--out", type=str, default=None)
-    ap.add_argument("--settings", choices=["both", "baseline", "deployed", "mirror_x", "p112", "p112_mirror_x"],
+    ap.add_argument("--settings", choices=["both", "baseline", "deployed", "mirror_x", "p112", "p112_mirror_x",
+                             "p112_step033", "p112_mirror_xy"],
                     default="both")
     a = ap.parse_args()
 
@@ -168,6 +169,14 @@ def main():
         # list is [z, y, x], so (2,) gives exactly one flip (2x compute).
         settings = [dict(patch_size=[96, 192, 192], use_mirroring=True,
                          allowed_axes=(2,), label="p96_mirror_x_only")]
+    elif a.settings == "p112_step033":
+        settings = [dict(patch_size=[112, 224, 224], use_mirroring=True, allowed_axes=(2,),
+                         tile_step=0.33, label="p112_mirror_x_step033")]
+    elif a.settings == "p112_mirror_xy":
+        # 4x compute (flips over y, x and both): a ceiling for what more test-
+        # time mirroring could give, not deployable on the T4 within 12 minutes
+        settings = [dict(patch_size=[112, 224, 224], use_mirroring=True, allowed_axes=(1, 2),
+                         label="p112_mirror_xy")]
     elif a.settings == "p112_mirror_x":
         settings = [dict(patch_size=[112, 224, 224], use_mirroring=True,
                          allowed_axes=(2,), label="p112_mirror_x")]
