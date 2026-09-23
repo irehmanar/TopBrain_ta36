@@ -75,11 +75,21 @@ def main():
     ap.add_argument("--epochs", type=int, default=None)
     ap.add_argument("--no_pretrained", action="store_true")
     ap.add_argument("--resume", type=Path, default=None)
+    ap.add_argument("--loc_loss", choices=["bce", "balanced_bce"], default=None,
+                    help="override ClsConfig.loc_loss -- see its docstring "
+                         "(job 88/89's diagnosis of the loc head's near-zero "
+                         "recall at threshold 0.5)")
+    ap.add_argument("--w_loc", type=float, default=None,
+                    help="override ClsConfig.w_loc (default 0.1)")
     a = ap.parse_args()
 
     cfg = C.CLS
     if a.epochs:
         cfg.epochs = a.epochs
+    if a.loc_loss:
+        cfg.loc_loss = a.loc_loss
+    if a.w_loc is not None:
+        cfg.w_loc = a.w_loc
     set_seed(cfg.seed + a.fold)
 
     spec = C.load_labels()

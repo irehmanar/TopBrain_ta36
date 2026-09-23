@@ -399,6 +399,18 @@ class ClsConfig:
     w_ap: float = 0.05
     w_sphere: float = 1.0
     w_type: float = 0.05                 # [TOPANEU] extra head, TopAneu ships type_masks
+    # w_loc=0.1 was tuned to protect macro-AUC under plain (unweighted)
+    # BCEWithLogitsLoss on the loc head -- job 88/89's official, presence-
+    # based evaluation (evaluate_official_classification.py) showed that
+    # setup gives recall 0.035 at the standard 0.5 threshold despite AUC
+    # ~0.85-0.94: with 52 independent, heavily-imbalanced location labels,
+    # unweighted BCE at low weight lets the model rank correctly while never
+    # being pushed to place its decision boundary near 0.5 for the rare
+    # positive class. "balanced_bce" reuses the SAME BalancedBCEWithLogitsLoss
+    # already used for the sphere head (mean loss on positives + mean loss on
+    # negatives, weighted equally regardless of class rarity) for the loc head
+    # too -- default "bce" keeps existing runs' behavior identical.
+    loc_loss: str = "bce"                # "bce" (original) or "balanced_bce"
     use_type_head: bool = True           # [TOPANEU]
     # --- optimisation
     epochs: int = 25

@@ -55,13 +55,20 @@ class AneurysmLoss(nn.Module):
         super().__init__()
         self.cfg = cfg
         self.bce = nn.BCEWithLogitsLoss()
+        # only used when cfg.loc_loss == "balanced_bce" (see config.py's
+        # ClsConfig.loc_loss docstring for why the plain BCE + w_loc=0.1
+        # default gives near-zero recall at a 0.5 threshold despite good AUC)
+        self.loc_balanced_bce = BalancedBCEWithLogitsLoss()
         self.sphere_bce = BalancedBCEWithLogitsLoss()
         self.sphere_ft = FocalTverskyPlusPlusLoss(
             cfg.ft_alpha, cfg.ft_beta, cfg.ft_gamma_pp, cfg.ft_gamma_focal)
 
     def forward(self, out, batch):
         parts = {}
-        loss_loc = self.bce(out["loc_logits"], batch["loc"])
+        loc_loss_fn = (self.loc_balanced_bce
+                      if getattr(self.cfg, "loc_loss", "bce") == "balanced_bce"
+                      else self.bce)
+        loss_loc = loc_loss_fn(out["loc_logits"], batch["loc"])
         loss_ap = self.bce(out["ap_logit"], batch["ap"])
         parts["loc"] = loss_loc.detach()
         parts["ap"] = loss_ap.detach()
