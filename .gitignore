@@ -8,6 +8,7 @@ model/*
 docker/*
 logs/*
 TopBrain_Data/*
+vessel-segmentation-class-balance/*
 # Virtual environments
 venv/
 .venv/
@@ -35,3 +36,4 @@ outputs/
 
 # OS
 .DS_Store
+vessel_segmentation_pipeline.png
