@@ -16,6 +16,10 @@ export CODE_ROOT="$EXP_ROOT/code"
 # Master dataset - DO NOT MODIFY
 export TOPANEU_DATA="$TOPANEU_ROOT/data"
 
+# TopBrain 2026 TA36 data release (imagesTr_topbrain + labelsTr_topbrain_v2_topaneu36class,
+# same 36-class label convention Model 2/Dataset302 already uses) - DO NOT MODIFY
+export TOPBRAIN_DATA="$TOPANEU_ROOT/TopBrain_Data"
+
 # ---------- Persistent logs ----------
 export LOG_ROOT="$EXP_ROOT/logs"
 
@@ -65,6 +69,7 @@ echo "TOPANEU_ROOT        = $TOPANEU_ROOT"
 echo "EXP_ROOT            = $EXP_ROOT"
 echo "CODE_ROOT           = $CODE_ROOT"
 echo "TOPANEU_DATA        = $TOPANEU_DATA"
+echo "TOPBRAIN_DATA        = $TOPBRAIN_DATA"
 
 echo ""
 echo "SCRATCH_ROOT        = $SCRATCH_ROOT"

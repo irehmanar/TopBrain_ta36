@@ -22,6 +22,9 @@ TOPANEU_ROOT = _p("TOPANEU_ROOT", "~/projects/def-punithak/abdul7/TopAneu")
 EXP_ROOT     = _p("EXP_ROOT", str(TOPANEU_ROOT / "experiments/01_rsna_pipeline"))
 CODE_ROOT    = _p("CODE_ROOT", str(EXP_ROOT / "code"))
 DATA_ROOT    = _p("TOPANEU_DATA", str(TOPANEU_ROOT / "data"))
+# TopBrain 2026 TA36 data release (imagesTr_topbrain + labelsTr_topbrain_v2_topaneu36class,
+# same 36-class label convention Dataset302/Model 2 already uses) -- see setup_env.sh
+TOPBRAIN_DATA_ROOT = _p("TOPBRAIN_DATA", str(TOPANEU_ROOT / "TopBrain_Data"))
 LOG_ROOT     = _p("LOG_ROOT", str(EXP_ROOT / "logs"))
 SCRATCH_ROOT = _p("SCRATCH_ROOT",
                   str(Path(os.environ.get("SCRATCH", "/tmp")) / "TopAneu/experiments/01_rsna_pipeline"))
@@ -201,6 +204,14 @@ DS_VESSELCOND_SEG = 313   # Dataset313_TopAneuVesselCondSeg
 # jobs/34_modality_split_binary_aneurysm.
 DS_ANEURYSM_CTA = 314   # Dataset314_TopAneuAneurysmCTA (binary, CTA-only cases)
 DS_ANEURYSM_MRA = 315   # Dataset315_TopAneuAneurysmMRA (binary, MRA-only cases)
+# [TOPANEU] TopBrain 2026 TA36 track: fine-tune Model 2 (Dataset302's own checkpoint,
+# TRAINER_M2/PLANS_RESENC) on the organizers' own TopBrain_Data release -- same
+# 36-class vessel target Dataset302 already predicts, just a second, independent
+# cohort. Built by seg/build_topbrain_finetune_dataset.py from
+# TOPBRAIN_DATA_ROOT/imagesTr_topbrain + labelsTr_topbrain_v2_topaneu36class (NOT the
+# v1_ct/v1_mr label folders, which use different, per-modality, non-matching class
+# counts). See jobs/41_topbrain_finetune.
+DS_TOPBRAIN_FINETUNE = 316   # Dataset316_TopBrainVesselFinetune
 DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm",
            DS_ANEURYSM_ROI: "TopAneuAneurysmROI",
@@ -213,7 +224,8 @@ DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION_GTVESSEL: "TopAneuLocationGTVessel",
            DS_VESSELCOND_SEG: "TopAneuVesselCondSeg",
            DS_ANEURYSM_CTA: "TopAneuAneurysmCTA",
-           DS_ANEURYSM_MRA: "TopAneuAneurysmMRA"}
+           DS_ANEURYSM_MRA: "TopAneuAneurysmMRA",
+           DS_TOPBRAIN_FINETUNE: "TopBrainVesselFinetune"}
 # case -> "CTA" / "MRA" / "UNCERTAIN", written once by prep/classify_modality.py
 MODALITY_JSON = CODE_ROOT / "topaneu_rsna" / "modality_split.json"
 MODALITY_STATS_CSV = LOG_ROOT / "modality_classification_stats.csv"

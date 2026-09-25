@@ -7,7 +7,7 @@ __pycache__/
 model/*
 docker/*
 logs/*
-
+TopBrain_Data/*
 # Virtual environments
 venv/
 .venv/
