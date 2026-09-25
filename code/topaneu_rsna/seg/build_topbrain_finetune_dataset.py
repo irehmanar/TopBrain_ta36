@@ -112,6 +112,7 @@ def main():
     if dataset_json_path.exists() and not a.overwrite:
         print(f"[topbrain finetune] {dataset_json_path} already exists -- leaving it untouched "
              f"(pass --overwrite to regenerate).")
+        dataset_json = json.loads(dataset_json_path.read_text())
     else:
         m2_path = C.nnUNet_raw / f"Dataset{C.DS_VESSEL:03d}_{C.DS_NAMES[C.DS_VESSEL]}" / "dataset.json"
         if not m2_path.exists():
@@ -132,6 +133,17 @@ def main():
 
     preprocessed_dir = C.nnUNet_preprocessed / dataset_name
     preprocessed_dir.mkdir(parents=True, exist_ok=True)
+
+    # nnU-Net's own DefaultPreprocessor.run() reads dataset.json from
+    # nnUNet_preprocessed/<dataset_name>/, NOT from nnUNet_raw (confirmed from
+    # preprocessing/preprocessors/default_preprocessor.py) -- normally
+    # nnUNetv2_extract_fingerprint copies it there as a side effect, but we
+    # skip that step entirely (we borrow Dataset302's plan wholesale instead
+    # of deriving a fresh one), so it has to be copied explicitly here.
+    preprocessed_dataset_json_path = preprocessed_dir / "dataset.json"
+    preprocessed_dataset_json_path.write_text(json.dumps(dataset_json, indent=4))
+    print(f"[topbrain finetune] synced {preprocessed_dataset_json_path} "
+         f"(required by nnUNetv2_preprocess, easy to miss since it's not in nnUNet_raw)")
     splits_path = preprocessed_dir / "splits_final.json"
     if splits_path.exists() and not a.overwrite:
         existing = json.loads(splits_path.read_text())
