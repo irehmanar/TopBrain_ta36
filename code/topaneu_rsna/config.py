@@ -212,6 +212,30 @@ DS_ANEURYSM_MRA = 315   # Dataset315_TopAneuAneurysmMRA (binary, MRA-only cases)
 # v1_ct/v1_mr label folders, which use different, per-modality, non-matching class
 # counts). See jobs/41_topbrain_finetune.
 DS_TOPBRAIN_FINETUNE = 316   # Dataset316_TopBrainVesselFinetune
+# [TOPANEU] The one clean, controlled test of vessel-conditioning that was never
+# actually run: identical to Dataset304 in every respect (same 417 cases, same
+# whole-head native grid, same nnUNetResEncUNetMPlans plan reused via
+# nnUNetv2_move_plans_between_datasets, same trainer, same real 5-fold split --
+# copied byte-for-byte from Dataset304's own splits_final.json, not
+# regenerated) except channel 1 = a binarized (vessel_pred > 0) real Model 2
+# whole-head vessel prediction (VESSEL_PRED_M2_FULLHEAD, job 78's cache --
+# same 0/1 "on some vessel" convention Dataset305 used, not Dataset313's raw
+# 36-class channel). Every earlier attempt at this hypothesis (305: ROI-cropped
+# AND vessel-conditioned at once; 306: vesselness filter instead of a real
+# model; 311: crashed before epoch 1) changed something else alongside the
+# channel, so none of them isolated the one variable this dataset isolates.
+# See seg/build_aneurysm_vesselcond_dataset.py and jobs/43_vessel_cond_binary_controlled.
+DS_ANEURYSM_VESSELCOND = 317   # Dataset317_TopAneuAneurysmVesselCond
+# Same experiment, second variant: channel 1 comes from the class-balanced
+# retrain (job 165, still training as of this writing) instead of the base
+# Model 2 checkpoint. Kept as a SEPARATE dataset from 317, not a swap-in-place,
+# so both vessel-channel sources stay comparable side by side rather than
+# overwriting one another -- and because job 165's checkpoint is a moving
+# target (checkpoint_best.pth changes every time a new EMA best is hit), this
+# dataset's own build should be re-run if you want it to reflect a later
+# checkpoint than whatever job 177 predicted with.
+DS_ANEURYSM_VESSELCOND_CB = 318   # Dataset318_TopAneuAneurysmVesselCondCB
+VESSEL_PRED_M2_CB_FULLHEAD = WORK / "vessel_pred_m2_cb_fullhead"
 DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_LOCATION: "TopAneuLocation", DS_ANEURYSM: "TopAneuAneurysm",
            DS_ANEURYSM_ROI: "TopAneuAneurysmROI",
@@ -225,7 +249,9 @@ DS_NAMES = {DS_COARSE: "TopAneuVesselGroup", DS_VESSEL: "TopAneuVessel",
            DS_VESSELCOND_SEG: "TopAneuVesselCondSeg",
            DS_ANEURYSM_CTA: "TopAneuAneurysmCTA",
            DS_ANEURYSM_MRA: "TopAneuAneurysmMRA",
-           DS_TOPBRAIN_FINETUNE: "TopBrainVesselFinetune"}
+           DS_TOPBRAIN_FINETUNE: "TopBrainVesselFinetune",
+           DS_ANEURYSM_VESSELCOND: "TopAneuAneurysmVesselCond",
+           DS_ANEURYSM_VESSELCOND_CB: "TopAneuAneurysmVesselCondCB"}
 # case -> "CTA" / "MRA" / "UNCERTAIN", written once by prep/classify_modality.py
 MODALITY_JSON = CODE_ROOT / "topaneu_rsna" / "modality_split.json"
 MODALITY_STATS_CSV = LOG_ROOT / "modality_classification_stats.csv"

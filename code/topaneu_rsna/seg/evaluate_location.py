@@ -66,7 +66,8 @@ def hd95(pred, gt, spacing):
 
 
 def class_names_for(dataset_id: int) -> list[str]:
-    if dataset_id in (C.DS_ANEURYSM, C.DS_ANEURYSM_ROI, C.DS_ANEURYSM_VESSELNESS):
+    if dataset_id in (C.DS_ANEURYSM, C.DS_ANEURYSM_ROI, C.DS_ANEURYSM_VESSELNESS,
+                     C.DS_ANEURYSM_VESSELCOND, C.DS_ANEURYSM_VESSELCOND_CB):
         return ["aneurysm"]
     if dataset_id == C.DS_LOCATION:
         return C.load_labels().locations
